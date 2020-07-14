@@ -2,18 +2,18 @@
 % Please edit documentation in R/0_util.r
 \name{set_axes_position}
 \alias{set_axes_position}
-\title{Returns the axis scale and position}
+\title{Returns the axis scale and position.}
 \usage{
 set_axes_position(x, axes)
 }
 \arguments{
-\item{x}{numeric data object to scale and offset}
+\item{x}{Numeric data object to scale and offset.}
 
 \item{axes}{Position of the axes: "center", "bottomleft" or "off". Defaults
 to "center".}
 }
 \value{
-axis_scale and axis_scale
+Scaled and offset `x`` typically controling axes placement.
 }
 \description{
 Typically called, by other functions to scale axes.
@@ -21,4 +21,7 @@ Typically called, by other functions to scale axes.
 \examples{
 rb <- tourr::basis_random(4, 2)
 set_axes_position(x = rb, axes = "bottomleft")
+}
+\seealso{
+\code{\link{pan_zoom}} to set the scale and offset.
 }

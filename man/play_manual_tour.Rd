@@ -7,8 +7,13 @@
 play_manual_tour(
   basis = NULL,
   data,
+  manip_var,
   render_type = render_plotly,
   rescale_data = FALSE,
+  theta = NULL,
+  phi_min = 0L,
+  phi_max = 0.5 * pi,
+  angle = 0.05,
   ...
 )
 }
@@ -19,12 +24,29 @@ Defaults to NULL, generating a random basis.}
 
 \item{data}{(n, p) dataset to project, consisting of numeric variables.}
 
+\item{manip_var}{Integer column number or string exact column name of the.
+variable to manipulate. Required, no default.}
+
 \item{render_type}{Which graphics to render to. Defaults to render_plotly,}
 
 \item{rescale_data}{When TRUE scales the data to between 0 and 1.}
 
+\item{theta}{Angle in radians of "in-plane" rotation, on the xy plane of the
+reference frame. Defaults to theta of the basis for a radial tour.}
+
+\item{phi_min}{Minimum value phi should move to. Phi is angle in radians of
+the "out-of-plane" rotation, the z-axis of the reference frame.
+Required, defaults to 0.}
+
+\item{phi_max}{Maximum value phi should move to. Phi is angle in radians of
+the "out-of-plane" rotation, the z-axis of the reference frame.
+Required, defaults to pi/2.}
+
+\item{angle}{Target distance (in radians) between steps. Defaults to .05.}
+
 \item{...}{Optionally pass additional arguments to the \code{render_type} for
-plotting options.}
+projection point aesthetics; \code{geom_point(aes(...))}. OR passes optional
+arguments to \code{manual_tour},}
 }
 \value{
 An animation of a radial tour.
@@ -34,7 +56,7 @@ Performs the a manual tour and returns an animation of \code{render_type}.
 For use with \code{tourr::save_history()} tour paths see \code{play_tour_path()}.
 }
 \examples{
-flea_std <- tourr::rescale(tourr::flea[,1:6])
+flea_std <- tourr::rescale(tourr::flea[, 1:6])
 rb <- tourr::basis_random(n = ncol(flea_std))
 class <- tourr::flea$species
 

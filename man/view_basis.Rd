@@ -2,18 +2,9 @@
 % Please edit documentation in R/0_util.r
 \name{view_basis}
 \alias{view_basis}
-\title{Plot projection frame and return the axes table}
+\title{Plot the axes directions of the basis table without data points.}
 \usage{
-view_basis(
-  basis,
-  data = NULL,
-  lab = NULL,
-  axes = "center",
-  col = "black",
-  pch = 20,
-  cex = 1,
-  alpha = 1
-)
+view_basis(basis, data = NULL, lab = NULL, axes = "center", ...)
 }
 \arguments{
 \item{basis}{A (p, d) orthonormal numeric matrix.
@@ -28,26 +19,24 @@ number of variables used. By default will abbreviate data if available.}
 \item{axes}{Position of the axes: "center", "bottomleft" or "off". Defaults
 to "center".}
 
-\item{col}{Color of the projected points. Defaults to "black".}
-
-\item{pch}{Point character of the projected points. Defaults to 20.}
-
-\item{cex}{Point size of the data. Defaults to 1.}
-
-\item{alpha}{Opacity of the data points between 0 and 1. Defaults to 1.}
+\item{...}{Optionally passes arguments to the projection points inside the
+aesthetics; \code{geom_point(aes(...))}.}
 }
 \value{
 ggplot object of the basis.
 }
 \description{
-Uses base graphics to plot the circle with axes representing
-the projection frame. Returns the corresponding table.
+ggplot2 object of axes contribution inscribed in a unit circle.
 }
 \examples{
 rb <- tourr::basis_random(4, 2)
 view_basis(basis = rb)
 
 flea_std <- tourr::rescale(tourr::flea[, 1:4])
-view_basis(basis = rb, data = flea_std, axes = "bottomleft", 
-           col = tourr::flea[, 7], pch = tourr::flea[,7])
+view_basis(basis = rb, data = flea_std, axes = "bottomleft")
+
+view_basis(basis = rb, data = flea_std, axes = "right", 
+           col = col_of(tourr::flea[, 7], "Paired"), 
+           pch = pch_of(tourr::flea[,7]),
+           alpha = .7, size = 2)
 }

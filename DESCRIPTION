@@ -1,7 +1,7 @@
 Package: spinifex
 Title: Manual Tours, Manual Control of Dynamic Projections of Numeric
         Multivariate Data
-Version: 0.2.0
+Version: 0.2.5
 Authors@R: c(
     person("Nicholas", "Spyrison", email = "spyrison@gmail.com", role = c("aut", "cre")),
     person("Dianne", "Cook", role = c("aut", "ths"))
@@ -21,15 +21,16 @@ License: CC BY-NC-SA 4.0
 URL: https://github.com/nspyrison/spinifex/
 BugReports: https://github.com/nspyrison/spinifex/issues
 Imports: tourr, ggplot2, gganimate, plotly, shiny
-Suggests: rmarkdown, knitr, testthat, covr, RColorBrewer, dplyr, GGally
+Suggests: rmarkdown, RColorBrewer, htmlwidgets, knitr, testthat, covr,
+        dplyr, GGally
 VignetteBuilder: knitr
 Encoding: UTF-8
 LazyData: true
 RoxygenNote: 7.1.0
 NeedsCompilation: no
-Packaged: 2020-06-18 02:58:11 UTC; Nicholas Spyrison
+Packaged: 2020-07-14 02:43:19 UTC; Nicholas Spyrison
 Author: Nicholas Spyrison [aut, cre],
   Dianne Cook [aut, ths]
 Maintainer: Nicholas Spyrison <spyrison@gmail.com>
 Repository: CRAN
-Date/Publication: 2020-06-18 10:40:03 UTC
+Date/Publication: 2020-07-14 13:10:06 UTC
