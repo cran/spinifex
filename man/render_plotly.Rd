@@ -2,26 +2,70 @@
 % Please edit documentation in R/2_render.r
 \name{render_plotly}
 \alias{render_plotly}
-\title{Render the slides as a \emph{plotly} animation.}
+\title{Animation the frames as a HTML widget.}
 \usage{
-render_plotly(fps = 3L, tooltip = "none", html_filename = NULL, ...)
+render_plotly(
+  fps = 8L,
+  tooltip = "none",
+  html_filename = NULL,
+  save_widget_args = list(),
+  ...
+)
 }
 \arguments{
-\item{fps}{Frames/slides shown per second. Defaults to 3.}
+\item{fps}{Frames animated per second. Defaults to 8.}
 
-\item{tooltip}{Character vector of aesthetic mappings to show in the \code{plotly}
-hover-over tooltip. Defaults to "none". "all" shows all the
-aesthetic mappings. The order of variables controls the order they appear.
+\item{tooltip}{Character vector of aesthetic mappings to show in the
+hover-over tooltip (passed to \code{plotly::ggplot()}).
+Defaults to "none". "all" shows all the aesthetic mappings.
+The order of text controls the order they appear.
 For example, tooltip = c("id", "frame", "x", "y", "category", "color").}
 
-\item{html_filename}{Optional, saves the plotly object as an HTML widget to this string
-(without folderpath). Defaults to NULL (not saved). For more control call
-\code{htmlwidgets::saveWidget()} on a return object of \code{render_plotly()}.}
+\item{html_filename}{Optional, saves the plotly object as an HTML widget to
+this string (without the directory path).
+Defaults to NULL (not saved). For more output controluse \code{save_widget_args}
+or call \code{htmlwidgets::saveWidget()} on a return object of \code{render_plotly()}.}
 
-\item{...}{Optionally passes arguments to the projection points inside the
-aesthetics; \code{geom_point(aes(...))}.}
+\item{save_widget_args}{A list of arguments to be called in
+\code{htmlwidgets::saveWidget()} when used with a \code{html_filename}.}
+
+\item{...}{Passes arguments to \code{render_(aes(...))}.}
 }
 \description{
-Takes the result of \code{array2df()} and renders them into a
-\emph{plotly} animation.
+Takes the result of \code{array2df()} and animations them via \code{{plotly}}
+into a  self-contained HTML widget.
+}
+\examples{
+dat_std <- scale_sd(wine[, 2:14])
+clas <- wine$Type
+bas <- basis_pca(dat_std)
+mv <- manip_var_pca(dat_std)
+manual_array <- manual_tour(basis = bas, manip_var = mv)
+manual_df <- array2df(array = manual_array, data = dat_std)
+
+render_plotly(frames = manual_df)
+
+require(ggplot2)
+render_plotly(frames = manual_df, axes = "bottomleft", fps = 10,
+              tooltip = c("label", "frame", "x", "y"),
+              aes_args = list(color = clas, shape = clas),
+              identity_args = list(size = 1.5, alpha = .7),
+              ggproto = list(theme_void(),
+                             ggtitle("My title"),
+                             scale_color_brewer(palette = "Set2")))
+
+
+\dontrun{
+if(F){ ## Saving .html widget (may require additional setup)
+  render_plotly(frames = manual_df, axes = "bottomleft", fps = 10,
+                html_filename = "myRadialTour.html")
+}
+}
+}
+\seealso{
+\code{\link{render_}} for \code{...} arguments.
+
+\code{\link[plotly]{ggplotly}} for source documentation of \code{tooltip}.
+
+\code{\link[htmlwidgets]{saveWidget}} for more control of .gif output.
 }

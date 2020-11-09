@@ -2,36 +2,44 @@
 % Please edit documentation in R/2_render.r
 \name{render_gganimate}
 \alias{render_gganimate}
-\title{Render the slides as a \emph{gganimate} animation.}
+\title{Render the frames as a \emph{gganimate} animation.}
 \usage{
 render_gganimate(
-  fps = 3L,
+  fps = 8L,
   rewind = FALSE,
-  start_pause = 1L,
-  end_pause = 3L,
+  start_pause = 0.5,
+  end_pause = 1L,
   gif_filename = NULL,
   gif_path = NULL,
+  gganimate_args = list(),
   ...
 )
 }
 \arguments{
-\item{fps}{Frames/slides shown per second. Defaults to 3.}
+\item{fps}{Frames animated per second. Defaults to 8.}
 
 \item{rewind}{Logical, should the animation play backwards after reaching
 the end? Default to FALSE.}
 
 \item{start_pause}{Number of seconds to pause on the first frame for.
-Defaults to 1.}
+Defaults to .5.}
 
 \item{end_pause}{Number of seconds to pause on the last frame for.
-Defaults to 3.}
+Defaults to 1.}
 
 \item{gif_filename}{Optional, saves the animation as a GIF to this string
-(without folderpath) . Defaults to NULL (no GIF saved). For more control call
-\code{gganimate::anim_save()} on a return object of \code{render_gganimate()}.}
+(without the directory path). Defaults to NULL (no GIF saved).
+For more output control, call \code{gganimate::anim_save()} on a return object of
+\code{render_gganimate()}.}
 
-\item{gif_path}{Optional, A string of the directory path (without filename)
-to save a GIF to. Defaults to NULL (current work directory).}
+\item{gif_path}{Optional, A string of the directory path (without the
+filename) to save a GIF to. Defaults to NULL (current work directory).}
+
+\item{gganimate_args}{A list of arguments assigned to a vector passe outside
+of an aes() call. Anything that would be put in \code{geom_point(aes(), X)}.
+Typically a single numeric for point size, alpha, or similar
+For example, \code{geom_point(aes(), size = 2, alpha = .7)} becomes
+\code{identity_args = list(size = 2, alpha = .7)}.}
 
 \item{...}{Optionally passes arguments to the projection points inside the
 aesthetics; \code{geom_point(aes(...))}.}
@@ -41,21 +49,33 @@ Takes the result of \code{array2df()} and renders them into a
 \emph{gganimate} animation.
 }
 \examples{
-flea_std <- tourr::rescale(tourr::flea[, 1:6])
-flea_class <- tourr::flea$species
-rb <- tourr::basis_random(n = ncol(flea_std))
-mtour <- manual_tour(basis = rb, manip_var = 4)
-sshow <- array2df(array = mtour, data = flea_std)
-\dontrun{
-render_gganimate(slides = sshow)
+dat_std <- scale_sd(wine[, 2:14])
+clas <- wine$Type
+bas <- basis_pca(dat_std)
+mv <- manip_var_pca(dat_std)
+manual_array <- manual_tour(basis = bas, manip_var = mv)
+manual_df <- array2df(array = manual_array, data = dat_std)
 
-render_gganimate(slides = sshow, axes = "bottomleft", fps = 2, rewind = TRUE,
-  col = flea_class, pch = flea_class, size = 2, alpha = .6)
+\dontrun{
+render_gganimate(frames = manual_df)
+
+require("ggplot2")
+render_gganimate(frames = manual_df, axes = "bottomleft",
+                 fps = 10, rewind = TRUE, start_pause = 1, end_pause = 1.5,
+                 aes_args = list(color = clas, shape = clas),
+                 identity_args = list(size = 2, alpha = .7),
+                 ggproto = list(theme_void(),
+                                ggtitle("My title"),
+                                scale_color_brewer(palette = "Set2")))
   
-if(F){
-  render_gganimate(slides = sshow, axes = "right", fps = 4, rewind = TRUE,
-    col = flea_class, pch = flea_class, size = 2,
-    gif_filename = "myRadialTour.gif", gif_path = "./docs")
+if(F){ ## Save as a .gif (may require additional setup)
+  render_gganimate(frames = manual_df, axes = "bottomleft",
+                   gif_filename = "myRadialTour.gif", gif_path = "./output")
 }
 }
+}
+\seealso{
+\code{\link{render_}} for \code{...} arguments.
+
+\code{\link[gganimate]{anim_save}} for more control of .gif output.
 }

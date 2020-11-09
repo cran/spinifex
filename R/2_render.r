@@ -1,349 +1,344 @@
-#' Turns a tour path array into a long data frame.
-#'
-#' Typically called by a wrapper function, `play_manual_tour` or 
-#' `play_tour_path`. Takes the result of `tourr::save_history()` or 
-#' `manual_tour()` and restructures the data from an array to a long data frame 
-#' for use in ggplots.
-#'
-#' @param array A (p, d, n_slides) array of a tour, the output of 
-#' `manual_tour()`.
-#' @param data Optional, (n, p) dataset to project, consisting of numeric 
-#' variables.
-#' @param lab Optional, labels for the reference frame of length 1 or the 
-#' number of variables used. Defaults to an abbreviation of the variables.
-#' @return A list containing an array of basis slides (p, d, n_slides) and
-#' an array of data slides (n, d, n_slides) if data is present.
-#' @export
-#' @examples
-#' flea_std <- tourr::rescale(tourr::flea[, 1:6])
-#' 
-#' rb <- tourr::basis_random(n = ncol(flea_std))
-#' mtour <- manual_tour(basis = rb, manip_var = 4)
-#' array2df(array = mtour, data = flea_std)
-array2df <- function(array, 
-                     data = NULL,
-                     lab = NULL) {
-  ## Initialize
-  manip_var <- attributes(array)$manip_var
-  p <- nrow(array[,, 1L])
-  n_slides <- dim(array)[3L]
-  
-  ## basis; array to long df
-  basis_slides <- NULL
-  for (slide in 1:n_slides) {
-    basis_rows <- data.frame(cbind(array[,, slide], slide))
-    basis_slides <- rbind(basis_slides, basis_rows)
-  }
-  colnames(basis_slides) <- c("x", "y", "slide")
-  
-  ## Data; if exists, array to long df
-  if(!is.null(data)) {
-    data <- as.matrix(data)
-    data_slides <- NULL
-    for (slide in 1L:n_slides) {
-      data_rows <- cbind(data %*% array[,, slide], slide)
-      data_rows[, 1L] <- scale(data_rows[, 1L], scale = FALSE)
-      data_rows[, 2L] <- scale(data_rows[, 2L], scale = FALSE)
-      data_slides <- data.frame(rbind(data_slides, data_rows))
-    }
-    colnames(data_slides) <- c("x", "y", "slide")
-  }
-  
-  ## Add labels, attribute, and list
-  basis_slides$lab <- NULL
-  if(!is.null(lab)){
-    basis_slides$lab <- rep(lab, nrow(basis_slides) / length(lab))
-  } else {
-    if(!is.null(data)) {basis_slides$lab <- abbreviate(colnames(data), 3L)
-    } else {
-      basis_slides$lab <- paste0("V", 1L:p)
-    }
-  }
-  
-  attr(basis_slides, "manip_var") <- manip_var
-  
-  slides <- if(!is.null(data)) {
-    list(basis_slides = basis_slides, data_slides = data_slides)
-  } else list(basis_slides = basis_slides)
-  
-  slides
-}
+##
+## RENDERING -----
+## ggplot2, gganimate, and plotly respectively
+##
 
-
-
-#' Prepate the ggplot object before passing to either animation package.
+#' Prepare the ggplot object before passing to either animation package.
 #'
-#' Typically called by `render_plotly()` or `render_gganimate()`. Takes the 
-#' result of `array2df()`, and renders them into a ggplot2 object. 
+#' Typically called by `render_plotly()` or `render_gganimate()`. Takes the
+#' result of `array2df()`, and renders them into a ggplot2 object.
 #'
-#' @param slides The result of `array2df()`, a long df of the projected frames.
-#' @param manip_col String of the color to highlight the `manip_var` with.
+#' @param frames The result of `array2df()`, a long df of the projected frames.
+#' @param axes Position of the axes, expects one of: 
+#' "center", "left", "right", "bottomleft", "topright", "off", or a 
+#' pan_zoom() call. Defaults to "center".
+#' @param manip_col String of the color to highlight the `manip_var`, if used.
 #' Defaults to "blue".
-#' @param axes Position of the axes: "center", "bottomleft", "off", "left", 
-#' "right". Defaults to "center".
-#' @param ... Optionally passes arguments to the projection points inside the 
-#' aesthetics; `geom_point(aes(...))`.
+#' @param line_size The size of the lines of the unit circle and variable 
+#' contributions of the basis. Defaults to 1.
+#' @param text_size The size of the text labels of the variable 
+#' contributions of the basis. Defaults to 5.
+#' @param aes_args A list of aesthetic arguments to passed to 
+#' `geom_point(aes(X)`. Any mapping of the data to an aesthetic,
+#' for example, `geom_point(aes(color = myCol, shape = myCol))` becomes
+#' `aes_args = list(color = myCol, shape = myCol)`.
+#' @param identity_args A list of static, identity arguments passed into 
+#' `geom_point()`, but outside of `aes()`; `geom_point(aes(), X)`.
+#' Typically a single numeric for point size, alpha, or similar.
+#' For example, `geom_point(aes(), size = 2, alpha = .7)` becomes
+#' `identity_args = list(size = 2, alpha = .7)`.
+#' @param ggproto A list of ggplot2 function calls.
+#' Anything that would be "added" to ggplot(); in the case of applying a theme,
+#' `ggplot() + theme_bw()` becomes `ggproto = list(theme_bw())`.
+#' Intended for aesthetic ggplot2 functions (not geom_* family).
 #' @export
 #' @examples
-#' flea_std <- tourr::rescale(tourr::flea[, 1:6])
-#' rb <- tourr::basis_random(n = ncol(flea_std))
-#' mtour <- manual_tour(basis = rb, manip_var = 4)
-#' sshow <- array2df(array = mtour, data = flea_std)
+#' ## Setup
+#' dat_std <- scale_sd(wine[, 2:14])
+#' clas <- wine$Type
+#' bas <- basis_pca(dat_std)
+#' mv <- manip_var_pca(dat_std)
 #' 
-#' render_(slides = sshow)
+#' manual_array <- manual_tour(basis = bas, manip_var = mv)
+#' manual_df <- array2df(array = manual_array, data = dat_std)
 #' 
-#' render_(slides = sshow, axes = "bottomleft", 
-#'         col = tourr::flea$species, pch = tourr::flea$species, cex = 2, alpha = .5)
-#'         
-#' render_(slides = sshow, axes = "bottomleft", 
-#'         col = tourr::flea$species, pch = tourr::flea$species, cex = 2, alpha = .5)
-render_ <- function(slides,
+#' ## Required arguments
+#' render_(frames = manual_df)
+#' 
+#' ## Full arguments
+#' require("ggplot2")
+#' render_(frames = manual_df, axes = "left", manip_col = "purple",
+#'         aes_args = list(color = clas, shape = clas),
+#'         identity_args = list(size = 1.5, alpha = .7),
+#'         ggproto = list(theme_void(),
+#'                        ggtitle("My title"),
+#'                        scale_color_brewer(palette = "Set2")))
+render_ <- function(frames,
                     axes = "center",
                     manip_col = "blue",
-                    ...) {
-  if(axes == "off" & length(slides) == 1) stop("render_ called with no data and axes = 'off'")
+                    line_size = .667,
+                    text_size = 5,
+                    aes_args = list(),
+                    identity_args = list(),
+                    ggproto = list(theme_spinifex())
+){
+  if(axes == "off" & length(frames) == 1L) stop("render_ called with no data and axes = 'off'")
+  #### Initialize
+  basis_frames  <- data.frame(frames[["basis_frames"]])
+  manip_var     <- attributes(frames$basis_frames)$manip_var
+  n_frames      <- length(unique(basis_frames$frame))
+  p             <- nrow(basis_frames) / n_frames
+  d             <- 2L ## Hard-coded assumption for 2D display
+  aes_args      <- as.list(aes_args)
+  identity_args <- as.list(identity_args)
+  ggproto       <- as.list(ggproto)
   
-  ## Initialize
-  basis_slides <- data.frame(slides[["basis_slides"]])
-  manip_var    <- attributes(slides$basis_slides)$manip_var
-  n_slides     <- length(unique(basis_slides$slide))
-  p            <- nrow(basis_slides) / n_slides
-  d            <- 2L ## Hardcoded assumtion for 2D display
-  ## If data exsists
-  data_slides  <- NULL
-  if (length(slides) == 2L) {
-    data_slides <- data.frame(slides[["data_slides"]])
-    ##### Bare with me here,:
-    args        <- list(...) ## An empty list behaves well too.
-    n_tgt_len   <- nrow(data_slides)
-    ## Replicate aesthetic args to correct length
-    tform_args  <- lapply(X = args, FUN = function(x) {rep_len(x, n_tgt_len)})
-    my_geom_pts <- function(...) {
-      suppressWarnings( ## Suppress for unused aes "frame", AND potential others from the ellipsis '...'
-        ggplot2::geom_point(data = data_slides,
-                            mapping = ggplot2::aes(x = x, 
-                                                   y = y, 
-                                                   frame = slide,
-                                                   ...)
-        )
-      )
-    }
-    proj_pts <- do.call(my_geom_pts, args = tform_args)
-  }
-  ## Axes unit circle
-  angle         <- seq(0L, 2L * pi, length = 360L)
-  circ          <- data.frame(x = cos(angle), y = sin(angle))
+  ## If data exists; fix arg length and plot MUST COME BEFORE AXES
+  data_frames <- NULL ## If NULL, scale_axes defaults to df(x=c(0,1), y=c(0,1))
+  if (length(frames) == 2L) data_frames <- data.frame(frames[["data_frames"]])
+  
+  ## Axes setup
+  angle <- seq(0L, 2L * pi, length = 360L)
+  circ  <- data.frame(x = cos(angle), y = sin(angle))
   ## Scale basis axes/circle
   if (axes != "off"){
-    zero         <- set_axes_position(0L, axes)
-    circ         <- set_axes_position(circ, axes)
-    basis_slides <- data.frame(set_axes_position(basis_slides[, 1L:d], axes), 
-                               basis_slides[, (d + 1L):ncol(basis_slides)])
+    center <- scale_axes(data.frame(x = 0L, y = 0L), axes, to = data_frames)
+    circ <- scale_axes(circ, axes, to = data_frames)
+    ## Rejoin frame number to the scaled bases frames
+    basis_frames <-
+      data.frame(scale_axes(basis_frames[, 1L:d], axes, to = data_frames),
+                 basis_frames[, (d + 1L):ncol(basis_frames)])
   }
-  ## manip var axes asethetics
+  ## Manip var axes aesthetics
   axes_col <- "grey50"
-  axes_siz <- 0.3
-  if(!is.null(manip_var)) {
-    axes_col            <- rep("grey50", p) 
+  axes_siz <- line_size
+  if(is.null(manip_var) == FALSE){
+    axes_col            <- rep("grey50", p)
     axes_col[manip_var] <- manip_col
-    axes_col            <- rep(axes_col, n_slides)
-    axes_siz            <- rep(0.3, p)
-    axes_siz[manip_var] <- 1L
-    axes_siz            <- rep(axes_siz, n_slides)
+    axes_col            <- rep(axes_col, n_frames)
+    axes_siz            <- rep(line_size, p)
+    axes_siz[manip_var] <- 1.5 * line_size
+    axes_siz            <- rep(axes_siz, n_frames)
   }
   
-  x_min <- min(c(circ[, 1L], data_slides[, 1L])) - .1
-  x_max <- max(c(circ[, 1L], data_slides[, 1L])) + .1
-  y_min <- min(c(circ[, 2L], data_slides[, 2L])) - .1
-  y_max <- max(c(circ[, 2L], data_slides[, 2L])) + .1
+  ## Recycle/replicate args if needed
+  if(length(frames) == 2L){ ## If data exists
+    tgt_len <- nrow(data_frames)
+    aes_args_out <- aes_args
+    identity_args_out <- identity_args
+    ## If AES_args exist, try to replicate
+    if(length(aes_args) > 0L){
+      for(i in 1:length(aes_args)){
+        if(length(aes_args[[i]]) > 1L & ## Length more than 1 and vector
+           is.vector(as.vector(aes_args[[i]])) == TRUE)
+          aes_args_out[[i]] <- as.factor(rep_len(aes_args[[i]], tgt_len))
+      }
+    } ## End if AES_args exist
+    ## If IDENTITY_args args exist, try to replicate
+    if (length(identity_args) > 0L){
+      for(i in 1:length(identity_args)){
+        if(length(identity_args[[i]]) > 1L & ## Length more than 1 and vector
+           is.vector(as.vector(identity_args[[i]])) == TRUE)
+          identity_args_out[[i]] <-
+            as.factor(rep_len(identity_args[[i]], tgt_len))
+      }
+    } ## End if IDENTITY_args exist
+    ## aes() call
+    aes_func <- function(...)
+      ggplot2::aes(x = x, y = y, frame = frame, ...)
+    aes_call <- do.call(aes_func, args = aes_args_out)
+    ## geom_point() call
+    geom_point_func <- function(aes_call, ...)
+      suppressWarnings( ## Suppressed unknown args: frame
+        ggplot2::geom_point(aes_call, data = data_frames, ...))
+    geom_point_call <-
+      do.call(geom_point_func, c(list(aes_call), identity_args_out))
+  }else{ ## Else, no data exists
+    geom_point_call <- suppressWarnings( ## Suppressed unknown args: frame
+      ggplot2::geom_point(ggplot2::aes(x = x, y = y, frame = frame),
+                          data_frames))
+  } ## End if data exist
   
   ## Ploting
-  gg <- 
+  gg <-
     ggplot2::ggplot() +
-    ggplot2::xlim(x_min, x_max) +
-    ggplot2::ylim(y_min, y_max)
-    
-  ## Project data points, if data exsists 
-  if (!is.null(data_slides)) {
-    gg <- gg + proj_pts
+    ggproto
+  ## Project data points, if data exists
+  if (is.null(data_frames) == FALSE){
+    gg <- gg + geom_point_call
   }
-  
-  ## Add axes directions if needed:
+  ## Add axes directions if needed
   if (axes != "off"){
     gg <- gg +
       ## Circle path
       ggplot2::geom_path(
-        data = circ, color = "grey80", size = .3, inherit.aes = F,
+        data = circ, color = "grey80", size = line_size, inherit.aes = FALSE,
         mapping = ggplot2::aes(x = x, y = y)
       ) +
       ## Basis axes segments
       suppressWarnings( ## Suppress for unused aes "frame".
-        ggplot2::geom_segment( 
-          data = basis_slides, size = axes_siz, colour = axes_col,
-          mapping = ggplot2::aes(x = x, y = y, frame = slide,
-                                 xend = zero[, 1L], yend = zero[, 2L])
+        ggplot2::geom_segment(
+          data = basis_frames, size = axes_siz, colour = axes_col,
+          mapping = ggplot2::aes(x = x, y = y, frame = frame,
+                                 xend = center[, 1L], yend = center[, 2L])
         )
       ) +
       ## Basis axes text labels
       suppressWarnings( ## Suppress for unused aes "frame".
-        ggplot2::geom_text(data = basis_slides, 
-                           mapping = ggplot2::aes(x = x, y = y, 
-                                                  frame = slide, label = lab),
+        ggplot2::geom_text(data = basis_frames,
+                           mapping = ggplot2::aes(x = x, y = y,
+                                                  frame = frame, label = label),
                            vjust = "outward", hjust = "outward",
-                           colour = axes_col, size = 4L)
+                           colour = axes_col, size = text_size)
       )
   }
   
+  ## Return
   gg
 }
 
 
-#' Render the slides as a *gganimate* animation.
+#' Render the frames as a *gganimate* animation.
 #'
 #' Takes the result of `array2df()` and renders them into a 
 #' *gganimate* animation.
 #'
-#' @param fps Frames/slides shown per second. Defaults to 3.
+#' @param fps Frames animated per second. Defaults to 8.
 #' @param rewind Logical, should the animation play backwards after reaching 
 #' the end? Default to FALSE.
 #' @param start_pause Number of seconds to pause on the first frame for.
-#' Defaults to 1.
+#' Defaults to .5.
 #' @param end_pause Number of seconds to pause on the last frame for.
-#' Defaults to 3.
+#' Defaults to 1.
 #' @param gif_filename Optional, saves the animation as a GIF to this string 
-#' (without folderpath) . Defaults to NULL (no GIF saved). For more control call 
-#' `gganimate::anim_save()` on a return object of `render_gganimate()`.
-#' @param gif_path Optional, A string of the directory path (without filename) 
-#' to save a GIF to. Defaults to NULL (current work directory).
+#' (without the directory path). Defaults to NULL (no GIF saved). 
+#' For more output control, call `gganimate::anim_save()` on a return object of
+#' `render_gganimate()`.
+#' @param gif_path Optional, A string of the directory path (without the
+#' filename) to save a GIF to. Defaults to NULL (current work directory).
+#' @param gganimate_args A list of arguments assigned to a vector passe outside
+#' of an aes() call. Anything that would be put in `geom_point(aes(), X)`.
+#' Typically a single numeric for point size, alpha, or similar
+#' For example, `geom_point(aes(), size = 2, alpha = .7)` becomes
+#' `identity_args = list(size = 2, alpha = .7)`.
 #' @param ... Optionally passes arguments to the projection points inside the 
 #' aesthetics; `geom_point(aes(...))`.
+#' @seealso \code{\link{render_}} for `...` arguments.
+#' @seealso \code{\link[gganimate]{anim_save}} for more control of .gif output.
 #' @export
 #' @examples
-#' flea_std <- tourr::rescale(tourr::flea[, 1:6])
-#' flea_class <- tourr::flea$species
-#' rb <- tourr::basis_random(n = ncol(flea_std))
-#' mtour <- manual_tour(basis = rb, manip_var = 4)
-#' sshow <- array2df(array = mtour, data = flea_std)
-#' \dontrun{
-#' render_gganimate(slides = sshow)
+#' dat_std <- scale_sd(wine[, 2:14])
+#' clas <- wine$Type
+#' bas <- basis_pca(dat_std)
+#' mv <- manip_var_pca(dat_std)
+#' manual_array <- manual_tour(basis = bas, manip_var = mv)
+#' manual_df <- array2df(array = manual_array, data = dat_std)
 #' 
-#' render_gganimate(slides = sshow, axes = "bottomleft", fps = 2, rewind = TRUE,
-#'   col = flea_class, pch = flea_class, size = 2, alpha = .6)
+#' \dontrun{
+#' render_gganimate(frames = manual_df)
+#' 
+#' require("ggplot2")
+#' render_gganimate(frames = manual_df, axes = "bottomleft",
+#'                  fps = 10, rewind = TRUE, start_pause = 1, end_pause = 1.5,
+#'                  aes_args = list(color = clas, shape = clas),
+#'                  identity_args = list(size = 2, alpha = .7),
+#'                  ggproto = list(theme_void(),
+#'                                 ggtitle("My title"),
+#'                                 scale_color_brewer(palette = "Set2")))
 #'   
-#' if(F){
-#'   render_gganimate(slides = sshow, axes = "right", fps = 4, rewind = TRUE,
-#'     col = flea_class, pch = flea_class, size = 2,
-#'     gif_filename = "myRadialTour.gif", gif_path = "./docs")
+#' if(F){ ## Save as a .gif (may require additional setup)
+#'   render_gganimate(frames = manual_df, axes = "bottomleft",
+#'                    gif_filename = "myRadialTour.gif", gif_path = "./output")
 #' }
 #' }
-render_gganimate <- function(fps = 3L,
+render_gganimate <- function(fps = 8L,
                              rewind = FALSE,
-                             start_pause = 1L,
-                             end_pause = 3L,
+                             start_pause = .5,
+                             end_pause = 1L,
                              gif_filename = NULL,
                              gif_path = NULL,
-                             ...) {
+                             gganimate_args = list(),
+                             ...){
   requireNamespace("gganimate")
+  ## Render and animate
+  gg  <- render_(...)
+  gga <- gg + gganimate::transition_states(frame, transition_length = 0L)
   
-  gg  <- render_(...) + ggplot2::coord_fixed()
-  gga <- gg + gganimate::transition_states(slide, 
-                                           transition_length = 0L)
-  anim <- gganimate::animate(gga, 
-                             fps = fps,
-                             rewind = rewind,
-                             start_pause = fps * start_pause,
-                             end_pause = fps * end_pause)
-  
+  anim_func <- function(...) 
+    gganimate::animate(gga, 
+                       fps = fps,
+                       rewind = rewind,
+                       start_pause = fps * start_pause,
+                       end_pause = fps * end_pause,
+                       ...)
+  anim <- do.call(anim_func, args = gganimate_args)
+
+  ## Save condition handling
   if(is.null(gif_filename) == FALSE)
     gganimate::anim_save(gif_filename, anim, gif_path)
-  if(is.null(gif_path)) 
+  if(is.null(gif_path) == FALSE & is.null(gif_filename) == TRUE) 
     warning("gif_path supplied with no gif_filename. Add a gif_filename to save a .gif.")
-  
   anim
 }
 
 
 
-#' Render the slides as a *plotly* animation.
+#' Animation the frames as a HTML widget.
 #'
-#' Takes the result of `array2df()` and renders them into a 
-#' *plotly* animation.
+#' Takes the result of `array2df()` and animations them via `{plotly}`
+#' into a  self-contained HTML widget.
 #'
-#' @param fps Frames/slides shown per second. Defaults to 3.
-#' @param tooltip Character vector of aesthetic mappings to show in the `plotly`
-#' hover-over tooltip. Defaults to "none". "all" shows all the 
-#' aesthetic mappings. The order of variables controls the order they appear. 
+#' @param fps Frames animated per second. Defaults to 8.
+#' @param tooltip Character vector of aesthetic mappings to show in the
+#' hover-over tooltip (passed to `plotly::ggplot()`).
+#' Defaults to "none". "all" shows all the aesthetic mappings.
+#' The order of text controls the order they appear.
 #' For example, tooltip = c("id", "frame", "x", "y", "category", "color").
-#' @param html_filename Optional, saves the plotly object as an HTML widget to this string 
-#' (without folderpath). Defaults to NULL (not saved). For more control call 
-#' `htmlwidgets::saveWidget()` on a return object of `render_plotly()`.
-#' @param ... Optionally passes arguments to the projection points inside the 
-#' aesthetics; `geom_point(aes(...))`.
+#' @param html_filename Optional, saves the plotly object as an HTML widget to
+#' this string (without the directory path).
+#' Defaults to NULL (not saved). For more output controluse `save_widget_args` 
+#' or call `htmlwidgets::saveWidget()` on a return object of `render_plotly()`.
+#' @param save_widget_args A list of arguments to be called in 
+#' `htmlwidgets::saveWidget()` when used with a `html_filename`.
+#' @param ... Passes arguments to `render_(aes(...))`.
+#' @seealso \code{\link{render_}} for `...` arguments.
+#' @seealso \code{\link[plotly]{ggplotly}} for source documentation of `tooltip`.
+#' @seealso \code{\link[htmlwidgets]{saveWidget}} for more control of .gif output.
 #' @export
-#' flea_std   <- tourr::rescale(tourr::flea[, 1:6])
-#' flea_class <- tourr::flea$species
-#' rb <- tourr::basis_random(n = ncol(flea_std))
-#' mtour <- manual_tour(basis = rb, manip_var = 4)
-#' sshow <- array2df(array = mtour, data = flea_std)
+#' @examples
+#' dat_std <- scale_sd(wine[, 2:14])
+#' clas <- wine$Type
+#' bas <- basis_pca(dat_std)
+#' mv <- manip_var_pca(dat_std)
+#' manual_array <- manual_tour(basis = bas, manip_var = mv)
+#' manual_df <- array2df(array = manual_array, data = dat_std)
+#' 
+#' render_plotly(frames = manual_df)
+#' 
+#' require(ggplot2)
+#' render_plotly(frames = manual_df, axes = "bottomleft", fps = 10,
+#'               tooltip = c("label", "frame", "x", "y"),
+#'               aes_args = list(color = clas, shape = clas),
+#'               identity_args = list(size = 1.5, alpha = .7),
+#'               ggproto = list(theme_void(),
+#'                              ggtitle("My title"),
+#'                              scale_color_brewer(palette = "Set2")))
+#' 
+#' 
 #' \dontrun{
-#' render_plotly(slides = sshow)
-#' 
-#' render_plotly(slides = sshow, axes = "bottomleft", fps = 2, tooltip = "all",
-#' col = flea_class, pch = flea_class, size = 2, alpha = .6)
-#' 
-#' if(F){
-#'   render_plotly(slides = sshow, axes = "right", fps = 4, tooltip = "all",
-#'     col = class, pch = class, size = 2,
-#'     html_filename = "myRadialTour.html")
+#' if(F){ ## Saving .html widget (may require additional setup)
+#'   render_plotly(frames = manual_df, axes = "bottomleft", fps = 10,
+#'                 html_filename = "myRadialTour.html")
 #' }
 #' }
-render_plotly <- function(fps = 3L,
+render_plotly <- function(fps = 8L,
                           tooltip = "none",
                           html_filename = NULL,
-                          ...) {
+                          save_widget_args = list(),
+                          ...){
   requireNamespace("plotly")
-  
-  gg  <- render_(graphics = "plotly", ...)
+  ## Render
+  gg  <- render_(...)
   ggp <- plotly::ggplotly(p = gg, tooltip = tooltip)
-  ggp <- plotly::animation_opts(p = ggp, 
-                                frame = 1L / fps * 1000L, 
-                                transition = 0L, 
+  ggp <- plotly::animation_opts(p = ggp,
+                                frame = 1L / fps * 1000L,
+                                transition = 0L,
                                 redraw = FALSE)
-  ggp <- plotly::layout(ggp, showlegend = FALSE, 
+  ggp <- plotly::layout(ggp, showlegend = FALSE,
                         yaxis = list(showgrid = FALSE, showline = FALSE),
-                        xaxis = list(scaleanchor = "y", scaleratio = 1L,
+                        xaxis = list(scaleanchor = "y", scalaratio = 1L,
                                      showgrid = FALSE, showline = FALSE)
   )
+  ## Save condition handling
+  if (is.null(html_filename) == FALSE){
+    saveWidget_func <- function(...) 
+      htmlwidgets::saveWidget(widget = ggp, file = html_filename,
+                              ...)
+    do.call(saveWidget_func, args = save_widget_args)
+  }
   
-  if (is.null(html_filename) == FALSE)
-    htmlwidgets::saveWidget(ggp, html_filename)
-  
+  ## Return
   ggp
 }
 
-
-
-#' Aesthetic settings that can be applied to a ggplot object.
-#'
-#' A `ggplot2` theme (group of aesthetic settings), that can be added to a ggplot. 
-#'
-#' @export
-#' flea_std   <- tourr::rescale(tourr::flea[, 1:6])
-#' flea_class <- tourr::flea$species
-#' rb <- tourr::basis_random(n = ncol(flea_std))
-#' mtour <- manual_tour(basis = rb, manip_var = 4)
-#' sshow <- array2df(array = mtour, data = flea_std)
-#' \dontrun{
-#' render_plotly(slides = sshow)
-#' 
-#' render_plotly(slides = sshow, axes = "bottomleft", fps = 2, tooltip = "all",
-#' col = flea_class, pch = flea_class, size = 2, alpha = .6)
-#' }
-theme_spinifex <- function(){
-  ggplot2::theme_minimal() + 
-    ggplot2::theme(axis.title = ggplot2::element_blank(),
-                   axis.ticks = ggplot2::element_blank(),
-                   axis.text  = ggplot2::element_blank(),
-                   legend.position = "none") 
-}
 

@@ -2,12 +2,12 @@
 % Please edit documentation in R/3_visualize.r
 \name{play_tour_path}
 \alias{play_tour_path}
-\title{Render display of a provided tour path}
+\title{Animates the provided tour path.}
 \usage{
 play_tour_path(
-  tour_path,
+  tour_path = NULL,
   data = NULL,
-  angle = 0.15,
+  angle = 0.05,
   render_type = render_plotly,
   rescale_data = FALSE,
   ...
@@ -18,30 +18,50 @@ play_tour_path(
 
 \item{data}{Optional, number of columns must match that of \code{tour_path}.}
 
-\item{angle}{Target distance (in radians) between steps. Defaults to .15.}
+\item{angle}{Target distance (in radians) between steps. Defaults to .05.}
 
-\item{render_type}{Graphics to render to. Defaults to render_plotly,
-alternative use render_gganimate.}
+\item{render_type}{Graphics to render to. Defaults to \verb{render_plotly``, alternative use }render_gganimate`.}
 
-\item{rescale_data}{When TRUE scales the data to between 0 and 1.
+\item{rescale_data}{When TRUE scales the data columns to between 0 and 1.
 Defaults to FALSE.}
 
-\item{...}{Optionally pass additional arguments to the \code{render_type} for
-projection point aesthetics; \code{geom_point(aes(...))}.}
+\item{...}{Optionally pass additional arguments to \code{render_} and the
+function used in \code{render_type}.}
 }
 \description{
 Takes the result of \code{tourr::save_history()} or \code{manual_tour()}, interpolates
-over the path and renders into a selected \code{render_type}.
+over the path and renders into a specified \code{render_type}.
 }
 \examples{
-flea_std <- tourr::rescale(tourr::flea[, 1:6])
-tpath <- tourr::save_history(flea_std, tour_path = tourr::grand_tour(), max = 3)
-class <- tourr::flea$species
+dat_std <- scale_sd(wine[, 2:14])
+clas <- wine$Type
+bas <- basis_pca(dat_std)
+tpath <- tourr::save_history(dat_std, tour_path = tourr::grand_tour(), max = 5)
 
 \dontrun{
-play_tour_path(tour_path = tpath, data = flea_std)
+play_tour_path(tour_path = tpath, data = dat_std)
 
-play_tour_path(tour_path = tpath, data = flea_std, angle = .25, fps = 4,
-  render_type = render_gganimate, color = class, shape = class, axes = "bottomleft")
+play_tour_path(tour_path = tpath, data = dat_std,
+               axes = "bottomleft", angle = .08, fps = 8,
+               aes_args = list(color = clas, shape = clas),
+               identity_args = list(size = 1.5, alpha = .7),
+               ggproto = 
+                 list(ggplot2::theme_void(), ggplot2::ggtitle("My title")),
+               render_type = render_gganimate)
+
+if (F){ ## Saving output may require additional setup
+  ## Export plotly .html widget
+  play_tour_path(tour_path = tpath, data = dat_std,
+                 render_type = render_plotly,
+                 html_filename = "myRadialTour.html")
+               
+  ## Export gganimate .gif
+  play_tour_path(tour_path = tpath, data = dat_std,
+                 render_type = render_gganimate,
+                 gif_path = "myOutput", gif_filename = "myRadialTour.gif")
 }
+}
+}
+\seealso{
+\code{\link{render_}} For arguments to pass into \code{...}.
 }

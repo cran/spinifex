@@ -6,14 +6,13 @@
 \usage{
 play_manual_tour(
   basis = NULL,
-  data,
-  manip_var,
-  render_type = render_plotly,
-  rescale_data = FALSE,
+  data = NULL,
+  manip_var = NULL,
   theta = NULL,
   phi_min = 0L,
   phi_max = 0.5 * pi,
   angle = 0.05,
+  render_type = render_plotly,
   ...
 )
 }
@@ -26,10 +25,6 @@ Defaults to NULL, generating a random basis.}
 
 \item{manip_var}{Integer column number or string exact column name of the.
 variable to manipulate. Required, no default.}
-
-\item{render_type}{Which graphics to render to. Defaults to render_plotly,}
-
-\item{rescale_data}{When TRUE scales the data to between 0 and 1.}
 
 \item{theta}{Angle in radians of "in-plane" rotation, on the xy plane of the
 reference frame. Defaults to theta of the basis for a radial tour.}
@@ -44,9 +39,10 @@ Required, defaults to pi/2.}
 
 \item{angle}{Target distance (in radians) between steps. Defaults to .05.}
 
-\item{...}{Optionally pass additional arguments to the \code{render_type} for
-projection point aesthetics; \code{geom_point(aes(...))}. OR passes optional
-arguments to \code{manual_tour},}
+\item{render_type}{Which graphics to render to. Defaults to render_plotly,}
+
+\item{...}{Optionally pass additional arguments to \code{render_} and the
+function used in \code{render_type}.}
 }
 \value{
 An animation of a radial tour.
@@ -56,15 +52,34 @@ Performs the a manual tour and returns an animation of \code{render_type}.
 For use with \code{tourr::save_history()} tour paths see \code{play_tour_path()}.
 }
 \examples{
-flea_std <- tourr::rescale(tourr::flea[, 1:6])
-rb <- tourr::basis_random(n = ncol(flea_std))
-class <- tourr::flea$species
+dat_std <- scale_sd(wine[, 2:14])
+clas <- wine$Type
+bas <- basis_pca(dat_std)
+mv <- manip_var_pca(dat_std)
 
 \dontrun{
-play_manual_tour(basis = rb, data = flea_std, manip_var = 4)
+play_manual_tour(basis = bas, data = dat_std, manip_var = mv)
 
-play_manual_tour(basis = rb, data = flea_std, manip_var = 6, theta = .5 * pi,
-                 render_type = render_gganimate, col = class, pch = class, 
-                 axes = "bottomleft", fps = 5)
+play_manual_tour(basis = bas, data = dat_std, manip_var = mv,
+                 theta = .5 * pi, axes = "right", fps = 5,
+                 aes_args = list(color = clas, shape = clas),
+                 identity_args = list(size = 1.5, alpha = .7),
+                 ggproto = list(ggplot2::theme_void(), ggplot2::ggtitle("My title")),
+                 render_type = render_gganimate)
+
+if(F){ ## Saving output may require additional setup
+  ## Export plotly .html widget
+  play_manual_tour(basis = bas, data = dat_std, manip_var = 6, 
+                   render_type = render_plotly,
+                   html_filename = "myRadialTour.html")
+  
+  ## Export gganimate .gif
+  play_manual_tour(basis = bas, data = dat_std, manip_var = 1,
+                   render_type = render_gganimate,
+                   gif_filename = "myRadialTour.gif", gif_path = "./output")
 }
+}
+}
+\seealso{
+\code{\link{render_}} For arguments to pass into \code{...}.
 }
