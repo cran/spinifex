@@ -9,8 +9,6 @@
 #'
 #' @param tour_path The result of `tourr::save_history()` or `manual_tour()`.
 #' @param data Optional, number of columns must match that of `tour_path`.
-#' @param rescale_data When TRUE scales the data columns to between 0 and 1.
-#' Defaults to FALSE.
 #' @param angle Target distance (in radians) between steps. Defaults to .05.
 #' @param render_type Graphics to render to. Defaults to `render_plotly``,
 #' alternative use `render_gganimate`.
@@ -52,7 +50,6 @@ play_tour_path <- function(tour_path = NULL,
                            data  = NULL,
                            angle = .05,
                            render_type = render_plotly,
-                           rescale_data = FALSE,
                            ...) {
   if (is.null(tour_path) & is.null(data)) stop("tour_path or data must be supplied.")
   ## Data condition handling
@@ -64,8 +61,7 @@ play_tour_path <- function(tour_path = NULL,
   
   ## Initialization
   data <- as.matrix(data)
-  if(rescale_data) data <- scale_sd(data)
-  
+
   ## Tour array to tour df
   tour_path <- tourr::interpolate(basis_set = tour_path, angle = angle)
   attr(tour_path, "class") <- "array"
@@ -255,12 +251,23 @@ view_frame <- function(basis = NULL,
 }
 
 #### Treat past alternative versions as view_frame, will work with fully qualified code.
-#' @rdname view_frame
-view_basis <- view_frame
+#' @rdname spinifex-deprecated
+#' @section \code{view_basis}:
+#' For \code{view_basis}, use \code{\link{view_frame}}.
+#' @export
+view_basis <- function(...) {
+  .Deprecated("view_frame")
+  view_frame(...)
+}
 
-#' @rdname view_frame
-oblique_basis <- view_frame
-
+#' @rdname spinifex-deprecated
+#' @section \code{oblique_basis}:
+#' For \code{oblique_basis}, use \code{\link{view_frame}}.
+#' @export
+oblique_basis <- function(...) {
+  .Deprecated("view_frame")
+  view_frame(...)
+}
 
 
 #' Plot projection frame and return the axes table.
