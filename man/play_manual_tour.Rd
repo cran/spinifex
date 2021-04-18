@@ -6,8 +6,8 @@
 \usage{
 play_manual_tour(
   basis = NULL,
-  data = NULL,
-  manip_var = NULL,
+  data,
+  manip_var,
   theta = NULL,
   phi_min = 0L,
   phi_max = 0.5 * pi,
@@ -55,21 +55,23 @@ For use with \code{tourr::save_history()} tour paths see \code{play_tour_path()}
 dat_std <- scale_sd(wine[, 2:14])
 clas <- wine$Type
 bas <- basis_pca(dat_std)
-mv <- manip_var_pca(dat_std)
+mv <- manip_var_of(bas)
 
 \dontrun{
 play_manual_tour(basis = bas, data = dat_std, manip_var = mv)
 
 play_manual_tour(basis = bas, data = dat_std, manip_var = mv,
                  theta = .5 * pi, axes = "right", fps = 5,
+                 angle = .08, phi_min = 0, phi_max = 2 * pi,
                  aes_args = list(color = clas, shape = clas),
                  identity_args = list(size = 1.5, alpha = .7),
                  ggproto = list(ggplot2::theme_void(), ggplot2::ggtitle("My title")),
                  render_type = render_gganimate)
 
-if(F){ ## Saving output may require additional setup
+## Saving output may require additional setup
+if(F){ ## Don't run by mistake
   ## Export plotly .html widget
-  play_manual_tour(basis = bas, data = dat_std, manip_var = 6, 
+  play_manual_tour(basis = bas, data = dat_std, manip_var = 6,
                    render_type = render_plotly,
                    html_filename = "myRadialTour.html")
   

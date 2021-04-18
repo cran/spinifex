@@ -5,7 +5,7 @@
 \title{Animates the provided tour path.}
 \usage{
 play_tour_path(
-  tour_path = NULL,
+  tour_path,
   data = NULL,
   angle = 0.05,
   render_type = render_plotly,
@@ -32,12 +32,14 @@ over the path and renders into a specified \code{render_type}.
 dat_std <- scale_sd(wine[, 2:14])
 clas <- wine$Type
 bas <- basis_pca(dat_std)
-tpath <- tourr::save_history(dat_std, tour_path = tourr::grand_tour(), max = 5)
 
 \dontrun{
-play_tour_path(tour_path = tpath, data = dat_std)
+## Tour history from tourr::save_history
+g_path <- tourr::save_history(dat_std, tour_path = tourr::grand_tour(), max = 5)
 
-play_tour_path(tour_path = tpath, data = dat_std,
+play_tour_path(tour_path = g_path,  data = dat_std)
+
+play_tour_path(tour_path = g_path, data = dat_std,
                axes = "bottomleft", angle = .08, fps = 8,
                aes_args = list(color = clas, shape = clas),
                identity_args = list(size = 1.5, alpha = .7),
@@ -45,7 +47,8 @@ play_tour_path(tour_path = tpath, data = dat_std,
                  list(ggplot2::theme_void(), ggplot2::ggtitle("My title")),
                render_type = render_gganimate)
 
-if (F){ ## Saving output may require additional setup
+## Saving a .gif(may require additional setup)
+if(F){ ## Don't run by mistake
   ## Export plotly .html widget
   play_tour_path(tour_path = tpath, data = dat_std,
                  render_type = render_plotly,

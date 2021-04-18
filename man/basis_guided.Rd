@@ -2,9 +2,9 @@
 % Please edit documentation in R/0_util.r
 \name{basis_guided}
 \alias{basis_guided}
-\title{The last basis of a guided tour}
+\title{Solve for the last basis of a guided tour.}
 \usage{
-basis_guided(data, index_f = tourr::holes(), p = 2L, ...)
+basis_guided(data, index_f = tourr::holes(), d = 2L, ...)
 }
 \arguments{
 \item{data}{Numeric matrix or data.frame of the observations.}
@@ -12,22 +12,35 @@ basis_guided(data, index_f = tourr::holes(), p = 2L, ...)
 \item{index_f}{The index function to optimize.
 \code{{tourr}} exports \code{holes()}, \code{cmass()}, and \code{lda_pp(class)}.}
 
-\item{p}{Number of dimensions in the projection space.}
+\item{d}{Number of dimensions in the projection space.}
 
-\item{...}{Optional, other arguments to pass to \code{tourr::guided_tour}.}
+\item{...}{Optional, other arguments to pass to
+\code{\link[tourr:guided_tour]{tourr::guided_tour}}}
 }
 \value{
 Numeric matrix of the last basis of a guided tour.
 }
 \description{
-The last basis of a guided tour
+Performs simulated annealing on the index function, solving for it's local
+extrema. Returns only the last identified basis of the optimization. A
+truncated, muted extension of tourr::save_history(guided_tour())).
 }
 \examples{
-basis_guided(data = wine[, 2:14], index_f = tourr::holes())
+dat_std <- scale_sd(wine[, 2:14])
+basis_guided(data = dat_std, index_f = tourr::holes())
 
-basis_guided(data = wine[, 2:14], index_f = tourr::cmass(),
+basis_guided(data = dat_std, index_f = tourr::cmass(),
              alpha = .4, cooling = .9, max.tries = 30)
 }
 \seealso{
-\code{\link[tourr]{guided_tour}} for annealing arguments.
+\code{\link[tourr:guided_tour]{tourr::guided_tour}} for annealing
+arguments.
+
+Other basis identifiers: 
+\code{\link{basis_half_circle}()},
+\code{\link{basis_odp}()},
+\code{\link{basis_olda}()},
+\code{\link{basis_onpp}()},
+\code{\link{basis_pca}()}
 }
+\concept{basis identifiers}

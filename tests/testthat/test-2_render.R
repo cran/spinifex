@@ -3,21 +3,18 @@ library("testthat")
 dat_std <- scale_sd(wine[1:10, 2:5]) ## small chunk for speed.
 bas <- basis_pca(dat_std)
 clas <- wine$Type
-mv <- manip_var_pca(bas)
+mv <- manip_var_of(bas)
 
 ##
 ## RENDERING -----
 ## ggplot2, gganimate, and plotly respectively
 ##
-
-require("ggplot2")
 array_manual <- manual_tour(basis = bas, manip_var = mv)
 df_manual <- array2df(array = array_manual, data = dat_std,
-                         label = paste0("MyLabs", 1:nrow(bas)))
+                      label = paste0("MyLabs", 1:nrow(bas)))
 
 ### render_ -----
-
-
+library("ggplot2")
 ret <- render_(frames = df_manual, axes = "left", manip_col = "purple",
                aes_args = list(color = clas, shape = clas),
                identity_args = list(size = .8, alpha = .7),

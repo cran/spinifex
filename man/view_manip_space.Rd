@@ -8,11 +8,11 @@ view_manip_space(
   basis,
   manip_var,
   tilt = 0.1 * pi,
-  label = paste0("V", 1:nrow(basis)),
+  label = paste0("x", 1L:nrow(basis)),
   manip_col = "blue",
   manip_sp_col = "red",
-  line_size = 1,
-  text_size = 5,
+  line_size = 1L,
+  text_size = 5L,
   ggproto = list(theme_spinifex())
 )
 }
@@ -40,9 +40,10 @@ contributions of the basis. Defaults to 1.}
 \item{text_size}{The size of the text labels of the variable
 contributions of the basis. Defaults to 5.}
 
-\item{ggproto}{Accepts a list of gg functions. Think of this as an
-alternative format to \code{ggplot() + ggproto[[1]]}.
-Intended for passing a \verb{ggplot2::theme_*()} and related aesthetic functions.}
+\item{ggproto}{A list of ggplot2 function calls.
+Anything that would be "added" to ggplot(); in the case of applying a theme,
+\code{ggplot() + theme_bw()} becomes \code{ggproto = list(theme_bw())}.
+Intended for aesthetic ggplot2 functions (not geom_* family).}
 }
 \value{
 ggplot object of the basis.
@@ -54,7 +55,7 @@ the projection frame. Returns the corresponding table.
 \examples{
 dat_std <- scale_sd(wine[, 2:14])
 bas <- basis_pca(dat_std)
-mv <- manip_var_pca(dat_std)
+mv <- manip_var_of(bas)
 
 view_manip_space(basis = bas, manip_var = mv)
 

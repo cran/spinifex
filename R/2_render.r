@@ -37,7 +37,7 @@
 #' dat_std <- scale_sd(wine[, 2:14])
 #' clas <- wine$Type
 #' bas <- basis_pca(dat_std)
-#' mv <- manip_var_pca(dat_std)
+#' mv <- manip_var_of(bas)
 #' 
 #' manual_array <- manual_tour(basis = bas, manip_var = mv)
 #' manual_df <- array2df(array = manual_array, data = dat_std)
@@ -48,24 +48,24 @@
 #' ## Full arguments
 #' require("ggplot2")
 #' render_(frames = manual_df, axes = "left", manip_col = "purple",
-#'         aes_args = list(color = clas, shape = clas),
-#'         identity_args = list(size = 1.5, alpha = .7),
-#'         ggproto = list(theme_void(),
-#'                        ggtitle("My title"),
-#'                        scale_color_brewer(palette = "Set2")))
+#'    aes_args = list(color = clas, shape = clas),
+#'    identity_args = list(size = 1.5, alpha = .7),
+#'    ggproto = list(theme_minimal(),
+#'                   ggtitle("My title"),
+#'                   scale_color_brewer(palette = "Set2")))
 render_ <- function(frames,
                     axes = "center",
                     manip_col = "blue",
-                    line_size = .667,
-                    text_size = 5,
+                    line_size = 1L,
+                    text_size = 5L,
                     aes_args = list(),
                     identity_args = list(),
                     ggproto = list(theme_spinifex())
 ){
   if(axes == "off" & length(frames) == 1L) stop("render_ called with no data and axes = 'off'")
   #### Initialize
-  basis_frames  <- data.frame(frames[["basis_frames"]])
-  manip_var     <- attributes(frames$basis_frames)$manip_var
+  basis_frames  <- frames$basis_frames
+  manip_var     <- attributes(frames$data_frames)$manip_var
   n_frames      <- length(unique(basis_frames$frame))
   p             <- nrow(basis_frames) / n_frames
   d             <- 2L ## Hard-coded assumption for 2D display
@@ -74,20 +74,19 @@ render_ <- function(frames,
   ggproto       <- as.list(ggproto)
   
   ## If data exists; fix arg length and plot MUST COME BEFORE AXES
-  data_frames <- NULL ## If NULL, scale_axes defaults to df(x=c(0,1), y=c(0,1))
-  if (length(frames) == 2L) data_frames <- data.frame(frames[["data_frames"]])
+  data_frames <- frames$data_frames ## May be null.
   
   ## Axes setup
   angle <- seq(0L, 2L * pi, length = 360L)
   circ  <- data.frame(x = cos(angle), y = sin(angle))
   ## Scale basis axes/circle
-  if (axes != "off"){
-    center <- scale_axes(data.frame(x = 0L, y = 0L), axes, to = data_frames)
-    circ <- scale_axes(circ, axes, to = data_frames)
+  if(axes != "off"){
+    if(is.null(data_frames)){.to <- data.frame(x = c(-1L, 1L), y = c(-1L, 1L))
+    }else{.to <- data_frames}
+    center <- scale_axes(data.frame(x = 0L, y = 0L), axes, to = .to)
+    circ <- scale_axes(circ, axes, to = .to)
     ## Rejoin frame number to the scaled bases frames
-    basis_frames <-
-      data.frame(scale_axes(basis_frames[, 1L:d], axes, to = data_frames),
-                 basis_frames[, (d + 1L):ncol(basis_frames)])
+    basis_frames <- scale_axes(basis_frames, axes, to = .to)
   }
   ## Manip var axes aesthetics
   axes_col <- "grey50"
@@ -102,26 +101,26 @@ render_ <- function(frames,
   }
   
   ## Recycle/replicate args if needed
-  if(length(frames) == 2L){ ## If data exists
-    tgt_len <- nrow(data_frames)
+  if(is.null(data_frames) == FALSE){ ## If data exists
     aes_args_out <- aes_args
     identity_args_out <- identity_args
+    tgt_len <- nrow(data_frames)
     ## If AES_args exist, try to replicate
     if(length(aes_args) > 0L){
-      for(i in 1:length(aes_args)){
+      .mute <- sapply(1L:length(aes_args), function(i){
         if(length(aes_args[[i]]) > 1L & ## Length more than 1 and vector
            is.vector(as.vector(aes_args[[i]])) == TRUE)
-          aes_args_out[[i]] <- as.factor(rep_len(aes_args[[i]], tgt_len))
-      }
+          aes_args_out[[i]] <<- as.factor(rep_len(aes_args[[i]], tgt_len))
+      })
     } ## End if AES_args exist
     ## If IDENTITY_args args exist, try to replicate
-    if (length(identity_args) > 0L){
-      for(i in 1:length(identity_args)){
+    if(length(identity_args) > 0L){
+      .mute <- sapply(1L:length(identity_args), function(i){
         if(length(identity_args[[i]]) > 1L & ## Length more than 1 and vector
            is.vector(as.vector(identity_args[[i]])) == TRUE)
-          identity_args_out[[i]] <-
+          identity_args_out[[i]] <<-
             as.factor(rep_len(identity_args[[i]], tgt_len))
-      }
+      })
     } ## End if IDENTITY_args exist
     ## aes() call
     aes_func <- function(...)
@@ -139,16 +138,12 @@ render_ <- function(frames,
                           data_frames))
   } ## End if data exist
   
-  ## Ploting
-  gg <-
-    ggplot2::ggplot() +
-    ggproto
+  ## Render
+  gg <- ggplot2::ggplot() + ggproto
   ## Project data points, if data exists
-  if (is.null(data_frames) == FALSE){
-    gg <- gg + geom_point_call
-  }
+  if(is.null(data_frames) == FALSE) gg <- gg + geom_point_call
   ## Add axes directions if needed
-  if (axes != "off"){
+  if(axes != "off"){
     gg <- gg +
       ## Circle path
       ggplot2::geom_path(
@@ -165,16 +160,16 @@ render_ <- function(frames,
       ) +
       ## Basis axes text labels
       suppressWarnings( ## Suppress for unused aes "frame".
-        ggplot2::geom_text(data = basis_frames,
-                           mapping = ggplot2::aes(x = x, y = y,
-                                                  frame = frame, label = label),
-                           vjust = "outward", hjust = "outward",
-                           colour = axes_col, size = text_size)
+        ggplot2::geom_text(
+          data = basis_frames,
+          mapping = ggplot2::aes(x = x, y = y,
+                                 frame = frame, label = label),
+          vjust = "outward", hjust = "outward",
+          colour = axes_col, size = text_size)
       )
   }
   
-  ## Return
-  gg
+  return(gg)
 }
 
 
@@ -201,16 +196,15 @@ render_ <- function(frames,
 #' Typically a single numeric for point size, alpha, or similar
 #' For example, `geom_point(aes(), size = 2, alpha = .7)` becomes
 #' `identity_args = list(size = 2, alpha = .7)`.
-#' @param ... Optionally passes arguments to the projection points inside the 
-#' aesthetics; `geom_point(aes(...))`.
+#' @param ... Passes arguments to `render_(...)`.
 #' @seealso \code{\link{render_}} for `...` arguments.
-#' @seealso \code{\link[gganimate]{anim_save}} for more control of .gif output.
+#' @seealso \code{\link[gganimate:anim_save]{gganimate::anim_save}} for more control of .gif output.
 #' @export
 #' @examples
 #' dat_std <- scale_sd(wine[, 2:14])
 #' clas <- wine$Type
 #' bas <- basis_pca(dat_std)
-#' mv <- manip_var_pca(dat_std)
+#' mv <- manip_var_of(bas)
 #' manual_array <- manual_tour(basis = bas, manip_var = mv)
 #' manual_df <- array2df(array = manual_array, data = dat_std)
 #' 
@@ -225,8 +219,9 @@ render_ <- function(frames,
 #'                  ggproto = list(theme_void(),
 #'                                 ggtitle("My title"),
 #'                                 scale_color_brewer(palette = "Set2")))
-#'   
-#' if(F){ ## Save as a .gif (may require additional setup)
+#' 
+#' ## Saving a .gif(may require additional setup)
+#' if(F){ ## Don't run by mistake
 #'   render_gganimate(frames = manual_df, axes = "bottomleft",
 #'                    gif_filename = "myRadialTour.gif", gif_path = "./output")
 #' }
@@ -256,9 +251,10 @@ render_gganimate <- function(fps = 8L,
   ## Save condition handling
   if(is.null(gif_filename) == FALSE)
     gganimate::anim_save(gif_filename, anim, gif_path)
-  if(is.null(gif_path) == FALSE & is.null(gif_filename) == TRUE) 
+  if(is.null(gif_path) == FALSE & is.null(gif_filename) == TRUE)
     warning("gif_path supplied with no gif_filename. Add a gif_filename to save a .gif.")
-  anim
+  
+  return(anim)
 }
 
 
@@ -276,11 +272,11 @@ render_gganimate <- function(fps = 8L,
 #' For example, tooltip = c("id", "frame", "x", "y", "category", "color").
 #' @param html_filename Optional, saves the plotly object as an HTML widget to
 #' this string (without the directory path).
-#' Defaults to NULL (not saved). For more output controluse `save_widget_args` 
+#' Defaults to NULL (not saved). For more output control use `save_widget_args` 
 #' or call `htmlwidgets::saveWidget()` on a return object of `render_plotly()`.
 #' @param save_widget_args A list of arguments to be called in 
 #' `htmlwidgets::saveWidget()` when used with a `html_filename`.
-#' @param ... Passes arguments to `render_(aes(...))`.
+#' @param ... Passes arguments to `render_(...)`.
 #' @seealso \code{\link{render_}} for `...` arguments.
 #' @seealso \code{\link[plotly]{ggplotly}} for source documentation of `tooltip`.
 #' @seealso \code{\link[htmlwidgets]{saveWidget}} for more control of .gif output.
@@ -289,24 +285,24 @@ render_gganimate <- function(fps = 8L,
 #' dat_std <- scale_sd(wine[, 2:14])
 #' clas <- wine$Type
 #' bas <- basis_pca(dat_std)
-#' mv <- manip_var_pca(dat_std)
+#' mv <- manip_var_of(bas)
 #' manual_array <- manual_tour(basis = bas, manip_var = mv)
 #' manual_df <- array2df(array = manual_array, data = dat_std)
 #' 
 #' \dontrun{
 #' render_plotly(frames = manual_df)
+#' }
 #' 
-#' require(ggplot2)
+#' require("ggplot2")
 #' render_plotly(frames = manual_df, axes = "bottomleft", fps = 10,
 #'               tooltip = c("label", "frame", "x", "y"),
 #'               aes_args = list(color = clas, shape = clas),
 #'               identity_args = list(size = 1.5, alpha = .7),
-#'               ggproto = list(theme_void(),
-#'                              ggtitle("My title"),
+#'               ggproto = list(theme_spinifex,
 #'                              scale_color_brewer(palette = "Set2")))
 #' 
-#' 
-#' if(F){ ## Saving .html widget (may require additional setup)
+#' ## Saving a .gif, may require additional setup
+#' if(F){ ## Don't run by mistake
 #'   render_plotly(frames = manual_df, axes = "bottomleft", fps = 10,
 #'                 html_filename = "myRadialTour.html")
 #' }
@@ -330,15 +326,13 @@ render_plotly <- function(fps = 8L,
                                      showgrid = FALSE, showline = FALSE)
   )
   ## Save condition handling
-  if (is.null(html_filename) == FALSE){
-    saveWidget_func <- function(...) 
-      htmlwidgets::saveWidget(widget = ggp, file = html_filename,
-                              ...)
+  if(is.null(html_filename) == FALSE){
+    saveWidget_func <- function(...)
+      htmlwidgets::saveWidget(widget = ggp, file = html_filename, ...)
     do.call(saveWidget_func, args = save_widget_args)
   }
   
-  ## Return
-  ggp
+  return(ggp)
 }
 
 

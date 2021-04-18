@@ -1,3 +1,21 @@
+# spinifex v0.2.8
+
+- Vectorized all for loops
+- `manip_var_of(basis)` suggests a variable to used based on the rank of the contributions of the basis.
+
+Basis_* functions to find features of interest, powered by `{Rdimtools}`.
+- `basis_olda()`
+- `basis_odp()`
+- `basis_odp()`
+- `basis_odp()`
+
+New util functions:
+- `scale_sd()` center and scale each variable by it's standard deviation
+- `scale_01()` center and scale each variable to be between [0, 1]
+- `basis_half_circle()`, variable agnostic basis with minimal variable dependence.
+- `as_history_array()`, coerces an array of bases into the same attributes and class as returns of `tourr::save_history()`
+
+
 # spinifex v0.2.7
 
 - Gives deprecated warning when using `view_basis()` and `oblique_basis()`, no longer listed in `view_frame()` documentation
@@ -6,14 +24,14 @@
 
 # spinifex v0.2.6
 
-- New argument, `ggproto`, accepts a list of `ggplot2` objects for more control over visual output
+- New argument, `ggproto`, accepts a list of `{ggplot2}` objects for more control over visual output
 - New argument, `aes_args`, accepts a list of arguments to pass into the `aes()` call within `geom_point()`. This is used for variable mappings, such as color, but needs to be qualified as this is standard evaluation
 - New argument, `identity_args`, accepts a list of arguments to pass call within `geom_point()`, but outside of `aes()`. This is used for scalar options or manually mapped vector such as point size or alpha
-- New datasets: `PimaIndiansDiabetes_long` & `PimaIndiansDiabetes_wide`
+- New datasets, `PimaIndiansDiabetes_long` & `PimaIndiansDiabetes_wide`
 - Fixed the centering of axes across frames
 - Fixed `scale_axes()` to automatically scale to data rather than assume the data is scaled to [0, 1]
 - Changed notation from "slide(s)" to "frame(s)" through-out
-- Deprecated `view_basis()` and `oblique_basis()` in favor of `view_frame`
+- Deprecated `view_basis()` and `oblique_basis()` in favor of `view_frame()`
 - Fixed theta labeling on `view_manip_space()`
 - Examples improved (simple case, adding more and more complexity) through-out 
 - Minor code, code comments, spelling, and grammar clean up through-out
@@ -38,7 +56,7 @@
 
 ## Demo shiny app
 
-- run_app("intro")
+- `run_app("intro")`
 
 ## New functions
 To accommodate interactive use, rather than predefined paths:
@@ -50,7 +68,7 @@ To accommodate interactive use, rather than predefined paths:
 ## New utility & internally-aimed functions
 
 - `pan_zoom()`
-- `is_orthonormal()` slightly more general than tourr::is_orthonormal()
+- `is_orthonormal()` slightly more general than `tourr::is_orthonormal()`
 
 ## Other changes
 
@@ -58,7 +76,6 @@ To accommodate interactive use, rather than predefined paths:
 - Argument naming and order consistency
 - Clarified and more consistent documentation
 - More defensive coding
-- `is_orthonormal()` slightly more general than tourr::is_orthonormal()
 
 
 # spinifex v0.1.0

@@ -8,8 +8,8 @@ render_(
   frames,
   axes = "center",
   manip_col = "blue",
-  line_size = 0.667,
-  text_size = 5,
+  line_size = 1L,
+  text_size = 5L,
   aes_args = list(),
   identity_args = list(),
   ggproto = list(theme_spinifex())
@@ -56,7 +56,7 @@ result of \code{array2df()}, and renders them into a ggplot2 object.
 dat_std <- scale_sd(wine[, 2:14])
 clas <- wine$Type
 bas <- basis_pca(dat_std)
-mv <- manip_var_pca(dat_std)
+mv <- manip_var_of(bas)
 
 manual_array <- manual_tour(basis = bas, manip_var = mv)
 manual_df <- array2df(array = manual_array, data = dat_std)
@@ -67,9 +67,9 @@ render_(frames = manual_df)
 ## Full arguments
 require("ggplot2")
 render_(frames = manual_df, axes = "left", manip_col = "purple",
-        aes_args = list(color = clas, shape = clas),
-        identity_args = list(size = 1.5, alpha = .7),
-        ggproto = list(theme_void(),
-                       ggtitle("My title"),
-                       scale_color_brewer(palette = "Set2")))
+   aes_args = list(color = clas, shape = clas),
+   identity_args = list(size = 1.5, alpha = .7),
+   ggproto = list(theme_minimal(),
+                  ggtitle("My title"),
+                  scale_color_brewer(palette = "Set2")))
 }

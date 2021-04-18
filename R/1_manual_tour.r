@@ -20,7 +20,7 @@
 #' ## Setup
 #' dat_std <- scale_sd(wine[, 2:14])
 #' bas <- basis_pca(dat_std)
-#' mv <- manip_var_pca(bas)
+#' mv <- manip_var_of(bas)
 #' 
 #' create_manip_space(basis = bas, manip_var = mv)
 create_manip_space <- function(basis, manip_var){
@@ -40,13 +40,18 @@ create_manip_space <- function(basis, manip_var){
   manip_space <- cbind(basis, rep(0L, len = nrow(basis)))
   manip_space[manip_var, ncol(manip_space)] <- 1L
   manip_space <- tourr::orthonormalise(manip_space)
-  colnames(manip_space) <-
-    c(paste0("P", 1L:(ncol(manip_space) - 1L)), "manip_sp")
-  rownames(manip_space) <-
-    paste0("V", 1L:nrow(manip_space))
   
-  ## Return
-  manip_space
+  ## Conserve col/row names
+  cn <- colnames(basis)
+  if(is.null(cn) == TRUE)
+    cn <- paste0("y", 1L:ncol(basis))
+  colnames(manip_space) <- c(cn, "manip_sp")
+  rn <- rownames(basis)
+  if(is.null(cn) == TRUE)
+    rn <- paste0("x", 1L:nrow(basis))
+  rownames(manip_space) <- rn
+  
+  return(manip_space)
 }
 
 
@@ -72,7 +77,7 @@ create_manip_space <- function(basis, manip_var){
 #' ## Setup
 #' dat_std <- scale_sd(wine[, 2:14])
 #' bas <- basis_pca(dat_std)
-#' mv <- manip_var_pca(bas)
+#' mv <- manip_var_of(bas)
 #' msp <- create_manip_space(basis = bas, manip_var = mv)
 #' 
 #' rotate_manip_space(msp, theta = runif(1, max = 2 * pi),
@@ -104,8 +109,13 @@ rotate_manip_space <- function(manip_space, theta, phi) {
                nrow = 3L, ncol = 3L, byrow = TRUE)
   rotated_space <- manip_space %*% R3
   
-  ## Return 
-  rotated_space
+  ## Conserve colnames (rownames already the same)
+  cn <- colnames(manip_space)
+  if(is.null(cn) == TRUE)
+    cn <- c(paste0("y", 1L:(ncol(manip_space) - 1L)), "manip_sp")
+  colnames(rotated_space) <- cn
+  
+  return(rotated_space)
 }
 
 
@@ -142,7 +152,7 @@ rotate_manip_space <- function(manip_space, theta, phi) {
 #' dat_std <- scale_sd(wine[, 2:14])
 #' clas <- wine$Type
 #' bas <- basis_pca(dat_std)
-#' mv <- manip_var_pca(dat_std)
+#' mv <- manip_var_of(bas)
 #' 
 #' ## Required arguments
 #' manual_tour(basis = bas, manip_var = mv)
@@ -159,36 +169,38 @@ manual_tour <- function(basis,
                         ...) {
   ## Assumptions
   basis <- as.matrix(basis)
-  if(length(manip_var) != 1 | manip_var < 1 | manip_var > nrow(basis))
+  p <- nrow(basis)
+  d <- ncol(basis)
+  if(length(manip_var) != 1L | manip_var < 1L | manip_var > p)
     stop("manip_var expected as a single integer between 1 and nrow(basis).")
   if(spinifex::is_orthonormal(basis) == FALSE){
     warning("Basis was not orthonormal. Coereced to othronormal with tourr::orthonormalise(basis).")
     basis <- tourr::orthonormalise(basis)
   }
   
-  ## Initalize
-  p <- nrow(basis)
-  d <- 2L ## d fixed to 2 atm.
+  ## Initialize
   phi_start <- acos(sqrt(basis[manip_var, 1L]^2L + basis[manip_var, 2L]^2L))
-  stopifnot(phi_min <= phi_start & phi_max >= phi_start)
+  if((phi_min < phi_start) == FALSE)
+    stop("Phi is currently less than phi_min, please set phi_min below ", phi_start)
+  if((phi_max > phi_start) == FALSE)
+    stop("Phi is currently greather than phi_max, please set phi_max above ", phi_start)
   xArgs <- list(...) ## Terminate args meant for `render_()` also passed in `play_manual_tour()`.
-  .theta <- theta
-  if (is.null(.theta))
-    .theta <- atan(basis[manip_var, 2L] / basis[manip_var, 1L])
+  if(is.null(theta))
+    theta <- atan(basis[manip_var, 2L] / basis[manip_var, 1L])
   
   ## Find the values of phi for each 'leg'/walk (direction of motion)
   phi_segment  <- function(start, end){
-    ## Initalize
-    mvar_xsign <- -sign(basis[manip_var, 1L])
+    ## Initialize
+    mvar_xsign <- ifelse(basis[manip_var, 1L] < 0L, -1L, 1L)
     start      <- mvar_xsign * (start - phi_start)
     end        <- mvar_xsign * (end   - phi_start)
     dist       <- abs(end - start)
     remainder  <- dist %% angle
-    sign       <- ifelse(end > start, 1L, -1L)
+    direction  <- ifelse(end > start, 1L, -1L)
     ## Define segments
-    segment <- seq(from = start, to = end - remainder, by = sign * angle)
+    segment <- seq(from = start, to = end - remainder, by = direction * angle)
     ## Add remaining partial step to the end if needed.
-    if (remainder != 0L) segment <- c(segment, end)
+    if(remainder != 0L) segment <- c(segment, end)
     ## Return
     segment
   }
@@ -202,56 +214,13 @@ manual_tour <- function(basis,
   n_frames <- length(phi_path)
   m_sp <- create_manip_space(basis = basis, manip_var = manip_var)
   tour_array <- array(NA, dim = c(p, d, n_frames))
-  for(i in 1L:n_frames){
+  .mute <- sapply(1L:n_frames, function(i){
     thisProj <-
-      rotate_manip_space(manip_space = m_sp, theta = .theta, phi = phi_path[i])
-    tour_array[,, i] <- thisProj[, 1L:2L]
-  }
+      rotate_manip_space(manip_space = m_sp, theta = theta, phi = -phi_path[i])
+    tour_array[,, i] <<- thisProj[, 1L:2L]
+  })
   attr(tour_array, "manip_var") <- manip_var
   
-  ## Return
-  tour_array
+  return(tour_array)
 }
-
-##
-## INTERMEDIATE AND FORMATING -----
-##
-
-
-### Depricate, i think this creates more confusion than it helps.
-# #' Return the manipulation space of the specified rotation
-# #'
-# #' Rotates a basis returning (p, 3) manipulation space that projects to 
-# #' `view_frame()`. Allows for interactive use rather than producing a whole tour.
-# #' 
-# #' @param basis A (p, d) orthonormal numeric matrix.
-# #' The linear combination the original variables contribute to projection space.
-# #' Defaults to NULL, generating a random basis.
-# #' @param manip_var Number of the column/dimension to rotate.
-# #' @param theta Angle, in radians, of "in-plane" rotation, on the xy plane of the 
-# #' reference frame. Required, no default.
-# #' If left NULL, will initialize the radial angle of the `manip_var`.
-# #' @param phi Angle, in radians, of the "out-of-plane" rotation, 
-# #' the z-axis of the reference frame. Required, no default.
-# #' @return (p, 2) matrix of the rotated basis.
-# #' @import tourr
-# #' @export
-# #' @examples
-# #' ## PCA basis with no rotation
-# #' dat <- wine[, 2:14]
-# #' bas <- basis_pca(dat)
-# #' mv  <- manip_var_pca(dat)
-# #' rotate_basis(bas, mv)
-# #' 
-# #' ## Rotate random 
-# #' rtheta <- runif(1, 0, 2 * pi)
-# #' rphi   <- runif(1, 0, 2 * pi)
-# #' rotate_basis(basis = bas, manip_var = mv, rtheta, rphi)
-# rotate_basis <- function(basis = NULL,
-#                          manip_var,
-#                          theta = 0L,
-#                          phi = 0L){
-#   m_sp <- create_manip_space(basis, manip_var)
-#   rotate_manip_space(manip_space = m_sp, theta, phi)[, 1L:ncol(basis)]
-# }
 
