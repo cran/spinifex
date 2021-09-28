@@ -2,13 +2,13 @@
 % Please edit documentation in R/3_visualize.r
 \name{view_manip_space}
 \alias{view_manip_space}
-\title{Plot projection frame and return the axes table.}
+\title{Plot 2D projection frame and return the axes table.}
 \usage{
 view_manip_space(
   basis,
   manip_var,
   tilt = 0.1 * pi,
-  label = paste0("x", 1L:nrow(basis)),
+  basis_label = abbreviate(row.names(basis), 3L),
   manip_col = "blue",
   manip_sp_col = "red",
   line_size = 1L,
@@ -26,8 +26,8 @@ Required, no default.}
 \item{tilt}{angle in radians to rotate the projection plane.
 Defaults to .1 * pi.}
 
-\item{label}{Optional, character vector of \code{p} length, add name to the axes
-in the reference frame, typically the variable names.}
+\item{basis_label}{Optional, character vector of \code{p} length, add name to the axes
+in the frame, defaults to 3 letter abbriviation of the orginal variable names.}
 
 \item{manip_col}{String of the color to highlight the \code{manip_var}.}
 
@@ -50,17 +50,18 @@ ggplot object of the basis.
 }
 \description{
 Uses base graphics to plot the circle with axes representing
-the projection frame. Returns the corresponding table.
+the projection frame. Returns the corresponding table. Only works for 2d
+manual tours.
 }
 \examples{
-dat_std <- scale_sd(wine[, 2:14])
+dat_std <- scale_sd(wine[, 2:6])
 bas <- basis_pca(dat_std)
 mv <- manip_var_of(bas)
 
 view_manip_space(basis = bas, manip_var = mv)
 
 view_manip_space(basis = bas, manip_var = mv,
-                 tilt = 2/12 * pi, label = paste0("MyNm", 1:ncol(dat_std)),
+                 tilt = 2/12 * pi, basis_label = paste0("MyNm", 1:ncol(dat_std)),
                  manip_col = "purple", manip_sp_col = "orange", 
                  ggproto = list(ggplot2::theme_void(), ggplot2::ggtitle("My title")))
 }

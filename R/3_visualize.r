@@ -4,13 +4,15 @@
 
 #' Animates the provided tour path.
 #'
+#' @description
+#' `r lifecycle::badge('superseded')`, see \code{\link{ggtour}}.
 #' Takes the result of `tourr::save_history()` or `manual_tour()`, interpolates
 #' over the path and renders into a specified `render_type`.
 #'
 #' @param tour_path The result of `tourr::save_history()` or `manual_tour()`.
 #' @param data Optional, number of columns must match that of `tour_path`.
 #' @param angle Target distance (in radians) between steps. Defaults to .05.
-#' @param render_type Graphics to render to. Defaults to `render_plotly``,
+#' @param render_type Graphics to render to. Defaults to `render_plotly`,
 #' alternative use `render_gganimate`.
 #' @param ... Optionally pass additional arguments to `render_` and the 
 #' function used in `render_type`.
@@ -18,14 +20,14 @@
 #' @seealso \code{\link{render_}} For arguments to pass into `...`.
 #' @export
 #' @examples
-#' dat_std <- scale_sd(wine[, 2:14])
+#' dat_std <- scale_sd(wine[, 2:6])
 #' clas <- wine$Type
 #' bas <- basis_pca(dat_std)
 #' 
-#' \dontrun{
 #' ## Tour history from tourr::save_history
 #' g_path <- tourr::save_history(dat_std, tour_path = tourr::grand_tour(), max = 5)
 #' 
+#' \dontrun{
 #' play_tour_path(tour_path = g_path,  data = dat_std)
 #' 
 #' play_tour_path(tour_path = g_path, data = dat_std,
@@ -47,25 +49,27 @@
 #'   play_tour_path(tour_path = tpath, data = dat_std,
 #'                  render_type = render_gganimate,
 #'                  gif_path = "myOutput", gif_filename = "myRadialTour.gif")
-#' }
-#' }
+#' }}
 play_tour_path <- function(tour_path,
                            data  = NULL,
                            angle = .05,
                            render_type = render_plotly,
                            ...) {
+  lifecycle::deprecate_warn("0.3.0", "play_tour_path()", "spinifex::ggtour()")
+  .Deprecated("spinifex::ggtour")
   ## Data condition handling
-  if(is.null(data) & !is.null(attributes(tour_path)$data)){ 
+  if(is.null(data) & !is.null(attributes(tour_path)$data)){
     data <- attributes(tour_path)$data
   }
   
   ## Initialization
   data <- as.matrix(data)
-
   ## Tour array to tour df
-  tour_path <- tourr::interpolate(basis_set = tour_path, angle = angle)
+  .mute <- utils::capture.output(
+    tour_path <- tourr::interpolate(basis_set = tour_path, angle = angle)
+  )
   attr(tour_path, "class") <- "array"
-  tour_df <- array2df(array = tour_path, data = data)
+  tour_df <- array2df(basis_array = tour_path, data = data)
   
   ## Render
   return(render_type(frames = tour_df, ...))
@@ -74,6 +78,8 @@ play_tour_path <- function(tour_path,
 
 #' Animate a manual tour
 #'
+#' @description
+#' `r lifecycle::badge('superseded')`, see \code{\link{ggtour}}.
 #' Performs the a manual tour and returns an animation of `render_type`.
 #' For use with `tourr::save_history()` tour paths see `play_tour_path()`. 
 #' 
@@ -103,7 +109,7 @@ play_tour_path <- function(tour_path,
 #' @seealso \code{\link{render_}} For arguments to pass into `...`.
 #' @export
 #' @examples
-#' dat_std <- scale_sd(wine[, 2:14])
+#' dat_std <- scale_sd(wine[, 2:6])
 #' clas <- wine$Type
 #' bas <- basis_pca(dat_std)
 #' mv <- manip_var_of(bas)
@@ -130,8 +136,7 @@ play_tour_path <- function(tour_path,
 #'   play_manual_tour(basis = bas, data = dat_std, manip_var = 1,
 #'                    render_type = render_gganimate,
 #'                    gif_filename = "myRadialTour.gif", gif_path = "./output")
-#' }
-#' }
+#' }}
 play_manual_tour <- function(basis = NULL,
                              data,
                              manip_var,
@@ -141,6 +146,9 @@ play_manual_tour <- function(basis = NULL,
                              angle = .05,
                              render_type = render_plotly,
                              ...){
+  lifecycle::deprecate_warn("0.3.0", "play_manual_tour()", "spinifex::ggtour()")
+  .Deprecated("spinifex::ggtour")
+  
   data <- as.matrix(data)
   ## Basis condition handling
   if(is.null(basis)){
@@ -148,9 +156,10 @@ play_manual_tour <- function(basis = NULL,
     message("NULL basis passed. Set to PCA basis.")
   }
   
-  tour_hist <- manual_tour(basis = basis, manip_var = manip_var, angle = angle,
+  mt_array <- manual_tour(basis = basis, manip_var = manip_var,
                            theta = theta, phi_min = phi_min, phi_max = phi_max)
-  tour_df <- array2df(array = tour_hist, data = data)
+  mt_array <- interpolate_manual_tour(mt_array, angle = angle)
+  tour_df <- array2df(basis_array = mt_array, data = data)
   return(render_type(frames = tour_df, ...))
 }
 
@@ -161,6 +170,8 @@ play_manual_tour <- function(basis = NULL,
 
 #' Plot a single frame of a manual tour
 #'
+#' @description
+#' `r lifecycle::badge('superseded')`, see \code{\link{ggtour}}.
 #' Projects the specified rotation as a 2D ggplot object. One static frame of 
 #' manual tour. Useful for providing user-guided interaction.
 #' 
@@ -173,41 +184,49 @@ play_manual_tour <- function(basis = NULL,
 #' on the xy plane of the reference frame. Defaults to 0, no rotation.
 #' @param phi Angle in radians of the "out-of-projection plane" rotation, into 
 #' the z-direction of the axes. Defaults to 0, no rotation.
-#' @param label Optionally, provide a character vector of length p (or 1) 
-#' to label the variable contributions to the axes, Default NULL, 
-#' results in a 3 character abbreviation of the variable names.
+#' @param basis_label Optional, character vector of `p` length, add name to the axes
+#' in the frame, defaults to 3 letter abbreviation of the original variable names.
 #' @param rescale_data When TRUE scales the data to between 0 and 1.
 #' Defaults to FALSE.
-#' @param ... Optionally pass additional arguments to the `render_type` for 
+#' @param ... Optionally pass additional arguments to the `proto_default` for 
 #' projection point aesthetics; 
 #' @return A ggplot object of the rotated projection.
 #' @import tourr
 #' @export
+#' @seealso \code{\link{proto_default}} For arguments to pass into `...`.
 #' @examples
-#' dat_std <- scale_sd(wine[, 2:14])
+#' ## Setup
+#' dat_std <- scale_sd(wine[, 2:6])
 #' clas <- wine$Type
 #' bas <- basis_pca(dat_std)
 #' mv <- manip_var_of(bas)
 #' 
+#' ## Minimal example
+#' \dontrun{
 #' view_frame(basis = bas)
 #' 
-#' view_frame(basis = bas, data = dat_std, manip_var = mv)
+#' ## Typical example
+#' view_frame(basis = bas, data = dat_std, manip_var = mv, axes = "left")
 #' 
+#' ## Full example
 #' rtheta <- runif(1, 0, 2 * pi)
 #' rphi   <- runif(1, 0, 2 * pi)
 #' view_frame(basis = bas, data = dat_std, manip_var = mv,
-#'            theta = rtheta, phi = rphi, label = paste0("MyNm", 1:ncol(dat_std)), 
+#'            theta = rtheta, phi = rphi, basis_label = paste0("MyNm", 1:ncol(dat_std)), 
 #'            aes_args = list(color = clas, shape = clas),
-#'            identity_args = list(size = 1.5, alpha = .7),
-#'            ggproto = list(ggplot2::theme_void(), ggplot2::ggtitle("My title")))
+#'            identity_args = list(size = 1.5, alpha = .7))}
 view_frame <- function(basis = NULL,
                        data = NULL,
                        manip_var = NULL,
                        theta = 0L,
                        phi = 0L,
-                       label = abbreviate(row.names(basis), 3L),
+                       basis_label = abbreviate(row.names(basis), 3L),
                        rescale_data = FALSE,
                        ...){
+  lifecycle::deprecate_warn("0.3.0", "view_frame()", "spinifex::ggtour()")
+  .Deprecated("spinifex::ggtour")
+  
+  ## Assumptions
   if(is.null(data) == FALSE)
     data <- as.matrix(data)
   if(is.null(basis)){
@@ -223,38 +242,40 @@ view_frame <- function(basis = NULL,
   }
   
   ## The work
-  tour_array <- array(basis, dim = c(dim(basis), 1L))
-  df_frames <- array2df(array = tour_array, data = data, label = label)
+  basis_array <- array(basis, dim = c(dim(basis), 1L))
+  df_frames <- array2df(basis_array = basis_array, data = data, basis_label = basis_label)
   attr(df_frames$data_frames, "manip_var") <- manip_var
   
   ## Render
   return(render_(frames = df_frames, ...))
 }
 
+
 #### Treat past alternative versions as view_frame, will work with fully qualified code.
 #' @rdname spinifex-deprecated
-#' @section \code{view_basis}:
+#' @section \code{ggtour}:
 #' For \code{view_basis}, use \code{\link{view_frame}}.
 #' @export
 view_basis <- function(...) {
-  .Deprecated("view_frame")
+  .Deprecated("spinifex::ggtour")
   view_frame(...)
 }
 
 #' @rdname spinifex-deprecated
 #' @section \code{oblique_basis}:
-#' For \code{oblique_basis}, use \code{\link{view_frame}}.
+#' For \code{oblique_basis}, please use the new api with \code{\link{ggtour}}.
 #' @export
 oblique_basis <- function(...) {
-  .Deprecated("view_frame")
+  .Deprecated("spinifex::ggtour")
   view_frame(...)
 }
 
 
-#' Plot projection frame and return the axes table.
+#' Plot 2D projection frame and return the axes table.
 #' 
 #' Uses base graphics to plot the circle with axes representing
-#' the projection frame. Returns the corresponding table.
+#' the projection frame. Returns the corresponding table. Only works for 2d 
+#' manual tours.
 #' 
 #' @param basis A (p, d) orthonormal numeric matrix.
 #' The linear combination the original variables contribute to projection space.
@@ -262,8 +283,8 @@ oblique_basis <- function(...) {
 #' @param manip_var Number of the column/dimension to rotate.
 #' @param tilt angle in radians to rotate the projection plane.
 #' Defaults to .1 * pi.
-#' @param label Optional, character vector of `p` length, add name to the axes
-#' in the reference frame, typically the variable names.
+#' @param basis_label Optional, character vector of `p` length, add name to the axes
+#' in the frame, defaults to 3 letter abbriviation of the orginal variable names.
 #' @param manip_col String of the color to highlight the `manip_var`.
 #' @param manip_sp_col Color to illustrate the z direction, orthogonal to the
 #' projection plane.
@@ -278,20 +299,20 @@ oblique_basis <- function(...) {
 #' @return ggplot object of the basis.
 #' @export
 #' @examples
-#' dat_std <- scale_sd(wine[, 2:14])
+#' dat_std <- scale_sd(wine[, 2:6])
 #' bas <- basis_pca(dat_std)
 #' mv <- manip_var_of(bas)
 #' 
 #' view_manip_space(basis = bas, manip_var = mv)
 #' 
 #' view_manip_space(basis = bas, manip_var = mv,
-#'                  tilt = 2/12 * pi, label = paste0("MyNm", 1:ncol(dat_std)),
+#'                  tilt = 2/12 * pi, basis_label = paste0("MyNm", 1:ncol(dat_std)),
 #'                  manip_col = "purple", manip_sp_col = "orange", 
 #'                  ggproto = list(ggplot2::theme_void(), ggplot2::ggtitle("My title")))
 view_manip_space <- function(basis,
                              manip_var,
                              tilt = .1 * pi,
-                             label = paste0("x", 1L:nrow(basis)),
+                             basis_label = abbreviate(row.names(basis), 3L),
                              manip_col = "blue",
                              manip_sp_col = "red",
                              line_size = 1L,
@@ -300,6 +321,8 @@ view_manip_space <- function(basis,
                                theme_spinifex()
                              )
 ){
+  ## NOT DEPRICATED, don't get this with the ggtour api.
+  
   #### Finds the angle between two vectors
   find_angle <- function(a, b)
     acos(sum(a * b) / (sqrt(sum(a * a)) * sqrt(sum(b * b))) )
@@ -367,12 +390,12 @@ view_manip_space <- function(basis,
       size = siz_v, colour = col_v) +
     ggplot2::geom_text(
       data = m_sp_r,
-      mapping = ggplot2::aes(x = x, y = y, label = label),
+      mapping = ggplot2::aes(x = x, y = y, label = basis_label),
       size = text_size, colour = col_v, vjust = "outward", hjust = "outward") +
     ## Red manip space
     ggplot2::geom_path(
       data = circ_r,
-      mapping = ggplot2::aes(x = x, y = z),
+      mapping = ggplot2::aes(x = x, y = z, group = 1L),
       color = manip_sp_col, size = line_size, inherit.aes = FALSE) +
     ggplot2::geom_segment(
       data = mv_sp_r,
@@ -384,7 +407,7 @@ view_manip_space <- function(basis,
       size = line_size, colour = "grey80", linetype = 2L) +
     ggplot2::geom_text(
       data = mv_sp_r,
-      mapping = ggplot2::aes(x = x, y = z, label = label[manip_var]),
+      mapping = ggplot2::aes(x = x, y = z, label = basis_label[manip_var]),
       size = text_size, colour = manip_sp_col, vjust = "outward", hjust = "outward") +
     ## Label phi and theta
     ggplot2::geom_text(
@@ -393,7 +416,7 @@ view_manip_space <- function(basis,
       color = manip_col, size = text_size, parse = TRUE) +
     ggplot2::geom_path(
       data = theta_curve_r,
-      mapping = ggplot2::aes(x = x , y),
+      mapping = ggplot2::aes(x = x , y = y, group = 1L),
       color = manip_col, size = 0.2)
 }
 

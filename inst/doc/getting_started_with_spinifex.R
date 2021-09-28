@@ -16,8 +16,8 @@ knitr::opts_chunk$set(
 )
 
 ## ----pkgs---------------------------------------------------------------------
-library("spinifex")
 library("tourr")
+library("spinifex")
 library("ggplot2")
 library("dplyr")
 
@@ -26,20 +26,25 @@ dat_std <- scale_sd(tourr::flea[,-7])
 bas_pca <- basis_pca(dat_std)
 clas <- tourr::flea[, 7]
 
-view_frame(basis = bas_pca)
+ggtour(basis_array = bas_pca, data = dat_std) +
+  proto_default(aes_args = list(color = clas))
 
 ## ----view-manip-space---------------------------------------------------------
-view_manip_space(basis = bas_pca, manip_var = 3, lab = colnames(dat_std)) 
+view_manip_space(basis = bas_pca, manip_var = 3) 
 
-## ---- eval=F------------------------------------------------------------------
-#  play_manual_tour(data = dat_std, basis = bas_pca, manip_var = 3, axes = "bottomleft",
-#                   aes_args = list(color = clas, shape = clas))
+## -----------------------------------------------------------------------------
+mt_path <- manual_tour(basis = bas_pca, manip_var = 3)
+
+my_ggtour <- ggtour(basis_array = mt_path, data = dat_std) +
+  proto_default(aes_args = list(color = clas, shape = clas))
+
+## ---- eval=FALSE--------------------------------------------------------------
+#  animate_plotly(ggtour = my_ggtour)
 
 ## ---- echo=F------------------------------------------------------------------
 nasa <- select(GGally::nasa, lat, long, day, surftemp)
 
-temp.gly <-
-  GGally::glyphs(nasa, "long", "day", "lat", "surftemp", height = 2.5)
+temp.gly <- GGally::glyphs(nasa, "long", "day", "lat", "surftemp", height = 2.5)
 glyph <-
   ggplot(temp.gly, aes(gx, gy, group = gid)) +
   GGally::add_ref_lines(temp.gly, color = "grey90") +
@@ -50,8 +55,10 @@ glyph
 
 ## ----Horizontal---------------------------------------------------------------
 ## Initialize
-nasa_std <- 
-  cbind(GGally::nasa[c("x", "y")], tourr::rescale(GGally::nasa[c("day", "surftemp")]))
+nasa_std <- cbind(
+  GGally::nasa[c("x", "y")],
+  scale_sd(GGally::nasa[c("day", "surftemp")])
+)
 bas <- tourr::basis_init(ncol(nasa_std), 2)
 
 ## Horizontal rotation
@@ -77,18 +84,28 @@ ggplot(rot_xy, aes(x = x, y = y)) + geom_point(size = 0.3) +
   theme_bw() + labs(x = "", y = "")
 
 ## -----------------------------------------------------------------------------
-dat_std <- tourr::rescale(tourr::flea[,1:6])
-fpath    <- tourr::save_history(dat_std, tourr::guided_tour(tourr::holes()))
+dat_std <- scale_sd(tourr::flea[, 1:6])
+holes_path <- tourr::save_history(dat_std, tourr::guided_tour(tourr::holes(), ))
 
-## ---- eval=F------------------------------------------------------------------
-#  play_tour_path(tour_path = fpath, data = dat_std, angle = .15,
-#    render_type = render_gganimate, col = tourr::flea$species, fps = 4)
+ggt <- ggtour(holes_path, dat_std) + proto_default()
+
+## ---- eval=FALSE--------------------------------------------------------------
+#  animate_plotly(ggt)
 
 ## -----------------------------------------------------------------------------
-f_holes_bas  <- matrix(as.numeric(fpath[,, dim(fpath)[3]]), ncol = 2)
-view_frame(f_holes_bas, lab = colnames(dat_std))
+## We added the basis_* functions, including basis_guided() to help:
+holes_bas <- basis_guided(dat_std, index_f = tourr::holes(), d = 2)
 
-## ---- eval=F------------------------------------------------------------------
-#  play_manual_tour(data = dat_std, basis = f_holes_bas,
-#                   manip_var = 5, col = tourr::flea$species)
+ggtour(holes_bas, dat_std) +
+  proto_default(aes_args = list(color = clas, shape = clas))
+
+## -----------------------------------------------------------------------------
+## Alternatively, ask for the variable by rank of the magnitude in the basis:
+(mv <- manip_var_of(holes_bas, rank = 1))
+mt_path <- manual_tour(holes_bas, mv)
+ggt <- ggtour(mt_path, dat_std) +
+  proto_default(aes_args = list(color = clas, shape = clas))
+
+## ---- eval=FALSE--------------------------------------------------------------
+#  animate_plotly(ggt)
 

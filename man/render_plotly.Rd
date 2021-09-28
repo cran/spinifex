@@ -4,22 +4,10 @@
 \alias{render_plotly}
 \title{Animation the frames as a HTML widget.}
 \usage{
-render_plotly(
-  fps = 8L,
-  tooltip = "none",
-  html_filename = NULL,
-  save_widget_args = list(),
-  ...
-)
+render_plotly(fps = 8L, html_filename = NULL, save_widget_args = list(), ...)
 }
 \arguments{
 \item{fps}{Frames animated per second. Defaults to 8.}
-
-\item{tooltip}{Character vector of aesthetic mappings to show in the
-hover-over tooltip (passed to \code{plotly::ggplot()}).
-Defaults to "none". "all" shows all the aesthetic mappings.
-The order of text controls the order they appear.
-For example, tooltip = c("id", "frame", "x", "y", "category", "color").}
 
 \item{html_filename}{Optional, saves the plotly object as an HTML widget to
 this string (without the directory path).
@@ -32,13 +20,37 @@ or call \code{htmlwidgets::saveWidget()} on a return object of \code{render_plot
 \item{...}{Passes arguments to \code{render_(...)}.}
 }
 \description{
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#superseded}{\figure{lifecycle-superseded.svg}{options: alt='[Superseded]'}}}{\strong{[Superseded]}}, see \code{\link{ggtour}}.
 Takes the result of \code{array2df()} and animations them via \code{{plotly}}
 into a  self-contained HTML widget.
+}
+\examples{
+dat_std <- scale_sd(wine[, 2:6])
+clas <- wine$Type
+bas <- basis_pca(dat_std)
+mv <- manip_var_of(bas)
+mt_array <- manual_tour(basis = bas, manip_var = mv)
+mt_df_ls <- array2df(basis_array = mt_array, data = dat_std)
+
+\dontrun{
+render_plotly(frames = mt_df_ls)
+
+require("ggplot2")
+render_plotly(
+  frames = mt_df_ls, axes = "bottomleft", fps = 10,
+  aes_args = list(color = clas, shape = clas),
+  identity_args = list(size = 1.5, alpha = .7),
+  ggproto = list(theme_bw(), scale_color_brewer(palette = "Set2")))
+
+## Saving a .gif, may require additional setup
+if(F) ## Don't run by mistake
+  render_plotly(frames = mt_df_ls, axes = "bottomleft", fps = 10,
+                html_filename = "myRadialTour.html")}
 }
 \seealso{
 \code{\link{render_}} for \code{...} arguments.
 
 \code{\link[plotly]{ggplotly}} for source documentation of \code{tooltip}.
 
-\code{\link[htmlwidgets]{saveWidget}} for more control of .gif output.
+\code{\link[htmlwidgets]{saveWidget}} for more control of .html output.
 }

@@ -2,9 +2,9 @@
 % Please edit documentation in R/0_util.r
 \name{basis_onpp}
 \alias{basis_onpp}
-\title{The basis of Orthogonal Locality Preserving Projection (OLPP)}
+\title{The basis of Orthogonal Neighborhood Preserving Projection (OLPP)}
 \usage{
-basis_onpp(data, d = 2L, type = c("knn", sqrt(nrow(data))))
+basis_onpp(data, d = 2, type = c("knn", sqrt(nrow(data))))
 }
 \arguments{
 \item{data}{Numeric matrix or data.frame of the observations, coerced to matrix.}
@@ -22,14 +22,14 @@ based on local and non-local variation as weighted against the neighborhood
 graph.
 }
 \description{
-Orthogonal Locality Preserving Projection (OLPP) is the orthogonal variant of
-LPP, a linear approximation to Laplacian Eigenmaps. It finds a linear
-approximation to the eigenfunctions of the Laplace-Beltrami operator on the
-graph-approximated data manifold. For the more details on \code{type} see
+Orthogonal Neighborhood Preserving Projection (ONPP) is an unsupervised
+linear dimension reduction method. It constructs a weighted data graph from
+LLE method. Also, it develops LPP method by preserving the structure of local
+neighborhoods. For the more details on \code{type} see
 \code{\link[Rdimtools:aux.graphnbd]{Rdimtools::aux.graphnbd()}}.
 }
 \examples{
-dat_std <- scale_sd(wine[, 2:14])
+dat_std <- scale_sd(wine[, 2:6])
 basis_onpp(data = dat_std)
 }
 \references{

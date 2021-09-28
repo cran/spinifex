@@ -4,7 +4,7 @@
 \alias{basis_odp}
 \title{The basis of Orthogonal Discriminant Projection (ODP)}
 \usage{
-basis_odp(data, class, d = 2L, type = c("proportion", 0.1), ...)
+basis_odp(data, class, d = 2, type = c("proportion", 0.1), ...)
 }
 \arguments{
 \item{data}{Numeric matrix or data.frame of the observations, coerced to matrix.}
@@ -28,7 +28,7 @@ and non-local scatter while local information is also preserved by
 constructing a neighborhood graph.
 }
 \examples{
-dat_std <- scale_sd(wine[, 2:14])
+dat_std <- scale_sd(wine[, 2:6])
 clas <- wine$Type
 basis_odp(data = dat_std, class = clas)
 }

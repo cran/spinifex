@@ -2,227 +2,121 @@
 ## MATH AND TRANSFORMS -----
 ##
 
-#' Test if a numeric matrix is orthonormal.
-#'
-#' Handles more cases than tourr::is_orthonormal().
+#' Test if a numeric matrix is orthonormal, that is, each column is orthogonal,
+#' at a right angle with the others, and each column has a norm 
+#' length of 1. This must be true for a projection to be linear.
 #'
 #' @param x Numeric matrix to test the orthonormality of.
 #' @param tol Max tolerance of floating point differences.
-#' Elecment-wise distance of t(x) %*% x from the identity matrix.
+#' Element-wise distance of t(x) %*% x from the identity matrix.
 #' @return Single logical, whether or not the matrix is orthonormal.
 #' @export
 #' @examples 
 #' is_orthonormal(tourr::basis_random(n = 6))
 #' is_orthonormal(matrix(1:12, ncol = 2), tol = 0.01)
 is_orthonormal <- function(x, tol = 0.001) {
+  if(is.numeric(x) == FALSE) stop("'x', expected to be numeric and coercable to matrix.")
   x <- as.matrix(x)
   actual <- t(x) %*% x ## Collapses to identity matrix IFF x is orthonormal
   expected <- diag(ncol(x))
   if(max(abs(actual - expected)) < tol){return(TRUE)}else{return(FALSE)}
 }
 
+
 #' Turns a tour path array into a long data frame.
 #'
-#' Typically called by a wrapper function, `play_manual_tour` or 
-#' `play_tour_path`. Takes the result of `tourr::save_history()` or 
-#' `manual_tour()` and restructures the data from an array to a long data frame 
-#' for use in ggplots.
+#' Internal function, many end users will not need this. Takes the result of 
+#' `manual_tour()` or `tourr::save_history()`. Restructures the array of 
+#' interpolated bases into a long data frame for use in ggplots.
 #'
-#' @param array A (p, d, n_frames) array of a tour, the output of 
-#' `manual_tour()`.
+#' @param basis_array A full (p, d, n_frames) interpolated basis array of a 
+#' tour, the output of `manual_tour` or `save_history(*_tour())`.
 #' @param data Optional, (n, p) dataset to project, consisting of numeric 
 #' variables.
-#' @param label Optional, labels for the reference frame of length 1 or the 
-#' number of variables used. Defaults to an abbreviation of the variables.
-#' @return A list containing an array of basis frames (p, d, n_frames) and
-#' an array of data frames (n, d, n_frames) if data is present.
+#' @param basis_label Optional, labels for the reference frame, a character 
+#' vector of the number of variables.
+#' Defaults to the 3 character abbreviation of the original variables names.
+#' @param data_label Optional, labels for plotly tooltip and return object. 
+#' Defaults to the rownames of the data, if available, then the row number.
 #' @export
 #' @examples
-#' ## Setup
-#' dat_std <- tourr::rescale(wine[, 2:14])
+#' ## !!This function is not meant for external use!!
+#' dat_std <- scale_sd(wine[, 2:6])
 #' clas <- wine$Type
 #' bas <- basis_pca(dat_std)
 #' mv <- manip_var_of(bas)
 #' 
 #' ## Radial tour array to long df, as used in play_manual_tour()
-#' tour_array <- manual_tour(basis = bas, manip_var = mv)
-#' str(
-#'   array2df(array = tour_array, data = dat_std,
-#'            label = paste0("MyLabs", 1:nrow(bas)))
-#' )
+#' mt_array <- manual_tour(basis = bas, manip_var = mv)
+#' ls_df_frames <- array2df(basis_array = mt_array, data = dat_std,
+#'                          basis_label = paste0("MyLabs", 1:nrow(bas)))
+#' str(ls_df_frames)
 #' 
 #' ## tourr::save_history tour array to long df, as used in play_tour_path()
-#' hist_array <- tourr::save_history(data = dat_std, max_bases = 10)
-#' str(
-#'   array2df(array = hist_array, data = dat_std,
-#'            label = paste0("MyLabs", 1:nrow(bas)))
-#' )
-array2df <- function(array,
-                     data = NULL,
-                     label = NULL){
-  if("history_array" %in% class(array)) class(array) <- "array"
+#' gt_array <- tourr::save_history(data = dat_std, max_bases = 10)
+#' ls_df_frames2 <- array2df(basis_array = gt_array, data = dat_std)
+#' str(ls_df_frames2)
+array2df <- function(
+  basis_array,
+  data = NULL,
+  basis_label = if(is.null(data) == FALSE) abbreviate(colnames(data), 3) else 1:nrow(basis_array),
+  data_label = if(is.null(data) == FALSE) abbreviate(colnames(data), 3) else paste0("v", 1:ncol(basis_array))
+){
+  if("history_array" %in% class(basis_array)) class(basis_array) <- "array"
+  
   ## Initialize
-  manip_var <- attributes(array)$manip_var
-  p <- dim(array)[1L]
-  n_frames <- dim(array)[3L]
+  manip_var <- attributes(basis_array)$manip_var
+  p <- dim(basis_array)[1L]
+  n_frames <- dim(basis_array)[3L]
   
   ## Basis condition handling
   basis_frames <- NULL
   .mute <- sapply(1L:n_frames, function(i){
-    basis_rows <- cbind(array[,, i], i)
+    basis_rows <- cbind(basis_array[,, i], i)
     basis_frames <<- rbind(basis_frames, basis_rows)
   })
   basis_frames <- as.data.frame(basis_frames)
-  colnames(basis_frames) <- c("x", "y", "frame")
+  .nms <- c("x", "y", "z", "w")
+  colnames(basis_frames) <- c(.nms[1L:(ncol(basis_frames) - 1L)], "frame")
   
-  ## Data; if exists, array to long df
+  ## Data; if exists
   if(is.null(data) == FALSE){
-    data <- as.matrix(data)
     data_frames <- NULL
+    data <- as.matrix(data)
     .mute <- sapply(1L:n_frames, function(i){
-      new_frame <- data %*% array[,, i]
+      new_frame <- data %*% matrix(basis_array[,, i], nrow(basis_array), ncol(basis_array))
       ## Center the new frame
-      new_frame[, 1L] <- new_frame[, 1L] - mean(new_frame[, 1L])
-      new_frame[, 2L] <- new_frame[, 2L] - mean(new_frame[, 2L])
+      new_frame <- sapply(1L:ncol(new_frame), function(i)
+        new_frame[, i] - mean(new_frame[, i])
+      )
       new_frame <- cbind(new_frame, i) ## Append frame number
       data_frames <<- rbind(data_frames, new_frame) ## Add rows to df
     })
     data_frames <- as.data.frame(data_frames)
-    colnames(data_frames) <- c("x", "y", "frame")
+    colnames(data_frames) <- c(.nms[1L:(ncol(data_frames) - 1L)], "frame")
+    ## Data label rep if applicable
+    if(is.null(data_label) == TRUE)
+      data_label <- 1L:nrow(data)
+    data_frames$label <- rep_len(data_label, nrow(data_frames))
   }
-
   
-  ## Labels and attribute condition handling
-  if(length(label) > 0L){
-    basis_frames$label <- rep(label, nrow(basis_frames) / length(label))
-  }else{
-    if(is.null(data) == FALSE){basis_frames$label <- abbreviate(colnames(data), 3L)
-    }else{
-      basis_frames$label <- paste0("x", 1L:p)
-    }
-  }
+  ## Basis label and manip_var attribute.
+  basis_frames$label <- rep_len(basis_label, nrow(basis_frames))
   attr(basis_frames, "manip_var") <- manip_var
   
-  ## Frame condition handling
-  df_frames <- NULL
-  if(is.null(data) == TRUE){
-    df_frames <- list(basis_frames = basis_frames)
-  }else{
-    df_frames <- list(basis_frames = basis_frames, data_frames = data_frames)
-  }
-  
-  return(df_frames)
+  ## Return, include data if it exists.
+  if(exists("data_frames")){
+    return(list(basis_frames = basis_frames,
+                data_frames = data_frames))
+  } else
+    return(list(basis_frames = basis_frames))
 }
 
-
-#' Returns the axis scale and position.
+#' Changes an array of bases into a "history_array" class for use 
+#' in `tourr::interpolate()`.
 #' 
-#' Typically called by other functions to scale the position of the axes 
-#' relative to the data.
-#' 
-#' @param x Numeric table, first 2 columns and scaled and offset relative to 
-#' the `to` argument.
-#' @param position Text specifying the position the axes should go to.
-#' Defaults to "center" expects one of: "center", "left", "right", 
-#' "bottomleft", "topright", or "off".
-#' @param to Table to appropriately set the size and position of the axes to.
-#' Based on the min/max of the first 2 columns.
-#' @return Transformed values of `x`, dimension and class unchanged.
-#' @seealso \code{\link{pan_zoom}} for more manual control.
-#' @export
-#' @examples
-#' rb <- tourr::basis_random(4, 2)
-#' 
-#' scale_axes(x = rb, position = "bottomleft")
-#' scale_axes(x = rb, position = "right", to = wine[, 2:3])
-scale_axes <- function(x,
-                       position = c("center", "left", "right", "bottomleft",
-                                    "topright", "off", "pan_zoom() call;",
-                                    pan_zoom(c(-1L, 0L), c(.7, .7))),
-                       to = data.frame(x = c(-1L, 1L), y = c(-1L, 1L))
-){
-  ## Assumptions
-  if(length(position) > 1) position <- position[1L]
-  if(position == "off") return()
-  ## If position is pan_zoom call with x = NULL;
-  if(is.list(position) & length(position) == 2L){
-    return(pan_zoom(pan = position$pan, zoom = position$zoom, x = x))
-  }
-  
-  ## Initialize
-  position <-
-    match.arg(tolower(position), several.ok = FALSE,
-              choices = c("center", "bottomleft", "topright", "off", "left", "right"))
-  xrange  <- range(to[, 1L])
-  yrange  <- range(to[, 2L])
-  xdiff   <- diff(xrange)
-  ydiff   <- diff(yrange)
-  xcenter <- mean(xrange)
-  ycenter <- mean(yrange)
-  
-  ## Condition handling of position
-  if(position == "center"){
-    scale <- .3 * ydiff
-    xoff  <- xcenter
-    yoff  <- ycenter
-  } else if(position == "bottomleft"){
-    scale <- .25 * ydiff
-    xoff  <- -.25 * xdiff + xcenter
-    yoff  <- -.5 * ydiff + ycenter
-  } else if(position == "topright"){
-    scale <- .25 * ydiff
-    xoff  <- .25 * xdiff + xcenter
-    yoff  <- .5 * ydiff + ycenter
-  } else if(position == "left"){
-    scale <- .3 * ydiff
-    xoff  <- -.7 * xdiff + xcenter
-    yoff  <- ycenter
-  } else if(position == "right"){
-    scale <- .3 * ydiff
-    xoff  <- .7 * xdiff + xcenter
-    yoff  <- ycenter
-  }
-  
-  ## Apply scale and return
-  x[, 1L] <- scale * x[, 1L] + xoff
-  x[, 2L] <- scale * x[, 2L] + yoff
-  return(x)
-}
-
-
-#' Pan (offset) and zoom (scale) a 2 column matrix or dataframe.
-#' 
-#' A manual variant of `scale_axes()`. Can be used as the `axes` argument 
-#' to manually set the size and locations of the axes.
-#' 
-#' @param pan 2 Numeric value to offset/pan the first 2 dimensions of `x`.
-#' @param zoom 2 Numeric value to scale/zoom the first 2 dimensions of `x`.
-#' @param x Numeric data object with 2 columns to scale and offset.
-#' Defaults to NULL, passing arguments to scale_axes for use internally.
-#' @return Scaled and offset `x`.
-#' @seealso \code{\link{scale_axes}} for preset choices.
-#' @export
-#' @examples 
-#' rb <- tourr::basis_random(6, 2)
-#' pan_zoom(pan = c(-1, 0), zoom = c(2/3, 2/3), x = rb)
-pan_zoom <- function(pan = c(0L, 0L),
-                     zoom = c(1L, 1L),
-                     x = NULL
-){
-  if(is.null(x)) return(list(pan = pan, zoom = zoom))
-  ## Assumptions
-  if(ncol(x) != 2L) warning("pan_zoom is only defined for 2 variables. x has more than 2 columns")
-  ## Apply scale and return
-  ret <- x
-  ret[, 1L] <- ret[, 1L] * zoom[1L] + pan[1L]
-  ret[, 2L] <- ret[, 2L] * zoom[2L] + pan[2L]
-  return(ret)
-}
-
-#' Changes an array of bases into a "history_array" for use in `tourr::interpolate`
-#' 
-#' Attaches data to an array and assigns the custom class "history_array" as 
-#' used in `tourr`. Typically called by other `spinifex` functions.
+#' Internal function, many end users will not need this. Attaches data to an array and assigns the custom class "history_array" as 
+#' used in `tourr`. Typically called by basis arrays from `spinifex` functions.
 #' 
 #' @param basis_array An array of bases.
 #' @param data The data matrix to be projected through the basis. This is
@@ -233,16 +127,150 @@ pan_zoom <- function(pan = c(0L, 0L),
 #' @seealso \code{\link[tourr:save_history]{tourr::save_history}} for preset choices.
 #' @export
 #' @examples 
-#' dat_std <- scale_sd(wine[, 2:14])
+#' ## !!This function is not meant for external use!!
+#' dat_std <- scale_sd(wine[, 2:6])
 #' bas <- basis_pca(dat_std)
 #' mv <- manip_var_of(bas)
 #' mt_array <- manual_tour(basis = bas, manip_var = mv)
 #' as_history_array(mt_array, dat_std)
-as_history_array <- function(basis_array, data){
-  if(missing(data) == FALSE)
+as_history_array <- function(basis_array, data = NULL){
+  if(length(data) > 0L)
     attr(basis_array, "data") <- as.matrix(data)
   class(basis_array) <- "history_array"
   return(basis_array)
+}
+
+
+#' Returns the axis scale and position.
+#' 
+#' Internal function. Typically called by other functions to scale the position
+#' of the axes data.frame or another data.frame to plot relative to the data.
+#' 
+#' @param x Numeric matrix or data.frame, first 2 columns and scaled and offset 
+#' the `to` object.
+#' @param position Text specifying the position the axes should go to.
+#' Defaults to "center" expects one of: "center", "left", "right", 
+#' "bottomleft", "topright", or "off".
+#' @param to Table to appropriately set the size and position of the axes to.
+#' Based on the min/max of the first 2 columns. If left NULL defaults to 
+#' data.frame(x = c(-1L, 1L), y = c(-1L, 1L).
+#' @return Transformed values of `x`, dimension and class unchanged.
+#' @seealso \code{\link{map_absolute}} for more manual control.
+#' @export
+#' @family Linear mapping
+#' @examples
+#' ## !!This function is not meant for external use!!
+#' rb <- tourr::basis_random(4, 2)
+#' 
+#' map_relative(x = rb, position = "bottomleft")
+#' map_relative(x = rb, position = "right", to = wine[, 2:3])
+map_relative <- function(
+  x,
+  position = c("center", "left", "top1d", "floor1d",
+               "right", "bottomleft", "topright", "off"),
+  to = NULL
+){
+  ## Assumptions
+  if(is.null(to)) to <- data.frame(x = c(-1L, 1L), y = c(-1L, 1L))
+  position <- match.arg(position)
+  if(position == "off") return()
+  # ## If position is map_absolute call with x = NULL;
+  # if(is.list(position) & length(position) == 2L){
+  #   return(map_absolute(x, offset = position$pan, scale = position$zoom))
+  # }
+  
+  ## Initialize
+  xrange  <- range(to[, 1L])
+  yrange  <- range(to[, 2L])
+  xdiff   <- diff(xrange)
+  ydiff   <- diff(yrange)
+  xcenter <- mean(xrange)
+  ycenter <- mean(yrange)
+  
+  ## Condition handling of position
+  if(position == "center"){
+    scale <- .5 * ydiff
+    xoff  <- xcenter
+    yoff  <- ycenter
+  } else if(position == "left"){
+    scale <- .5 * ydiff
+    xoff  <- -.7 * xdiff + xcenter
+    yoff  <- ycenter
+  } else if(position == "top1d"){
+    scale <- .25
+    xoff  <- xcenter
+    yoff  <- 1.1
+  } else if(position == "floor1d"){
+    scale <- .25
+    xoff  <- xcenter
+    yoff  <- ycenter
+  } else if(position == "right"){
+    scale <- .3 * ydiff
+    xoff  <- .7 * xdiff + xcenter
+    yoff  <- ycenter
+  } else if(position == "bottomleft"){
+    scale <- .25 * ydiff
+    xoff  <- -.25 * xdiff + xcenter
+    yoff  <- -.5 * ydiff + ycenter
+  } else if(position == "topright"){
+    scale <- .25 * ydiff
+    xoff  <- .25 * xdiff + xcenter
+    yoff  <- .5 * ydiff + ycenter
+  } else stop(paste0("position: ", position, " not defined."))
+  
+  ## Apply scale and return
+  if(position %in% c("top1d", "floor1d")){
+    x[, 1L] <- 4L * scale * x[, 1L] + xoff
+  } else x[, 1L] <- scale * x[, 1L] + xoff
+  x[, 2L] <- scale * x[, 2L] + yoff
+  
+  return(x)
+}
+
+#' @rdname spinifex-deprecated
+#' @section \code{scale_axes}:
+#' For \code{scale_axes}, use \code{\link{map_relative}}.
+#' @export
+scale_axes <- function(...) {
+  .Deprecated("map_relative")
+  map_relative(...)
+}
+
+
+#' Manually offset and scale the first 2 columns of a matrix or data.frame.
+#' 
+#' A manual variant of `map_relative()`. Can be used as the `axes` argument 
+#' to manually set the size and locations of the axes.
+#' 
+#' @param offset 2 Numeric values to offset/pan the first 2 dimensions of `x`.
+#' @param scale 2 Numeric values to scale/zoom to the first 2 dimensions of `x`.
+#' @param x Numeric data object with 2 columns to scale and offset.
+#' Defaults to NULL, passing arguments to scale_axes for use internally.
+#' @return Scaled and offset `x`.
+#' @seealso \code{\link{scale_axes}} for preset choices.
+#' @export
+#' @family Linear mapping
+#' @examples 
+#' bas <- tourr::basis_random(4, 2)
+#' 
+#' map_absolute(bas, offset = c(-2, 0), scale = c(2/3, 2/3))
+map_absolute <- function(x,
+                         offset = c(0L, 0L),
+                         scale = c(1L, 1L)
+){
+  ret <- x
+  ret[, 1L] <- ret[, 1L] * offset[1L] + scale[1L]
+  ret[, 2L] <- ret[, 2L] * offset[2L] + scale[2L]
+  return(ret)
+}
+
+#' @rdname spinifex-deprecated
+#' @section \code{pan_zoom}:
+#' For \code{pan_zoom}, use \code{\link{map_absolute}}.
+#' @export
+pan_zoom <- function(x, pan = c(0L, 0L), zoom = c(1L, 1L)) {
+  .Deprecated("map_absolute")
+  map_absolute(x, pan, zoom)
 }
 
 ##
@@ -252,6 +280,8 @@ as_history_array <- function(basis_array, data){
 #' A ggplot2 theme suggested for linear projections with spinifex.
 #' The default value for ggproto arguments in spinifex functions.
 #' 
+#' @param ... Optionally pass arguments to `ggplot2::theme()`.
+#' @seealso \code{\link[ggplot2:theme]{ggplot2::theme}} for all theme options.
 #' @export
 #' @examples 
 #' theme_spinifex()
@@ -259,10 +289,18 @@ as_history_array <- function(basis_array, data){
 #' require("ggplot2")
 #' ggplot(mtcars, aes(wt, mpg, color = as.factor(cyl))) +
 #'   geom_point() + theme_spinifex()
-theme_spinifex <- function(){
+theme_spinifex <- function(...){
   list(ggplot2::theme_void(),
        ggplot2::scale_color_brewer(palette = "Dark2"),
-       ggplot2::coord_fixed()
+       ggplot2::scale_fill_brewer(palette = "Dark2"),
+       ggplot2::coord_fixed(),
+       ggplot2::labs(x = "", y = ""),
+       ggplot2::theme(legend.position = "bottom",
+                      legend.direction = "horizontal", ## Levels within aesthetic
+                      legend.box = "vertical",         ## Between aesthetic
+                      legend.margin = ggplot2::margin(-1L,-1L,-1L,-1L, "mm"), ## Tighter legend margin
+                      axis.title = ggplot2::element_text(), ## Allow axis titles, though defaulted to blank
+                      ...) ## ... applied over defaults.
   )
 }
 
@@ -273,19 +311,22 @@ theme_spinifex <- function(){
 
 #' The basis of Principal Component Analysis (PCA)
 #' 
+#' The orthogonal linear components of the variables in the next largest 
+#' direction of variance.
+#' 
 #' @param data Numeric matrix or data.frame of the observations.
 #' @param d Number of dimensions in the projection space.
-#' @return A numeric matrix, an orthogonal basis that best distinguishes the 
-#' group means of `class`.
 #' @seealso \code{\link[Rdimtools:do.pca]{Rdimtools::do.pca}}
 #' @export
 #' @family basis identifiers
 #' @examples 
-#' dat_std <- scale_sd(wine[, 2:14])
+#' dat_std <- scale_sd(wine[, 2:6])
 #' basis_pca(data = dat_std)
-basis_pca <- function(data, d = 2L){
+basis_pca <- function(data, d = 2){
+  #ret <- stats::prcomp(data)$rotation[, 1L:d, drop = FALSE]
   ret <- Rdimtools::do.pca(X = as.matrix(data), ndim = d)$projection
   rownames(ret) <- colnames(data)
+  colnames(ret) <- paste0("PC", 1:d)
   return(ret)
 }
 
@@ -308,14 +349,18 @@ basis_pca <- function(data, d = 2L){
 #' @export
 #' @family basis identifiers
 #' @examples 
-#' dat_std <- scale_sd(wine[, 2:14])
+#' dat_std <- scale_sd(wine[, 2:6])
 #' clas <- wine$Type
 #' basis_olda(data = dat_std, class = clas)
-basis_olda <- function(data, class, d = 2L){
+basis_olda <- function(data, class, d = 2){
+  #lda <- MASS::lda(class ~ ., data = data.frame(data, class))$scaling
+  #ret <- tourr::orthonormalise(lda)[, 1L:d, drop = FALSE]
+  #colnames(ret) <- paste0("OLD", 1:d)
   ret <- Rdimtools::do.olda(X = as.matrix(data),
                             label = as.factor(class),
-                            ndim = d)$projection
+                             ndim = d)$projection
   rownames(ret) <- colnames(data)
+  colnames(ret) <- paste0("OLD", 1:d)
   return(ret)
 }
 
@@ -324,7 +369,7 @@ basis_olda <- function(data, class, d = 2L){
 #' Orthogonal Discriminant Projection (ODP) is a linear dimension reduction 
 #' method with class supervision. It maximizes weighted difference between local
 #' and non-local scatter while local information is also preserved by 
-#' constructing a neighborhood graph. 
+#' constructing a neighborhood graph.
 #' 
 #' @param data Numeric matrix or data.frame of the observations, coerced to matrix.
 #' @param class The class for each observation, coerced to a factor.
@@ -345,65 +390,26 @@ basis_olda <- function(data, class, d = 2L){
 #' @export
 #' @family basis identifiers
 #' @examples 
-#' dat_std <- scale_sd(wine[, 2:14])
+#' dat_std <- scale_sd(wine[, 2:6])
 #' clas <- wine$Type
 #' basis_odp(data = dat_std, class = clas)
-basis_odp <- function(data, class, d = 2L, type = c("proportion", 0.1), ...){
+basis_odp <- function(data, class, d = 2, type = c("proportion", 0.1), ...){
   ret <- Rdimtools::do.odp(X = as.matrix(data),
                            label = as.factor(class),
                            ndim = d,
                            type = type,
                            ...)$projection
   rownames(ret) <- colnames(data)
+  colnames(ret) <- paste0("ODP", 1L:d)
   return(ret)
 }
 
-#### TODO: Error in Rdimtools::do.olpp(), issue opened to GH 10/4/2021.
-# #' The basis of Orthogonal Locality Preserving Projection (OLPP)
-# #' 
-# #' Orthogonal Locality Preserving Projection (OLPP) is the orthogonal variant of
-# #' LPP, a linear approximation to Laplacian Eigenmaps. It finds a linear 
-# #' approximation to the eigenfunctions of the Laplace-Beltrami operator on the 
-# #' graph-approximated data manifold.
-# #' 
-# #' @param data Numeric matrix or data.frame of the observations, coerced to matrix.
-# #' @param d Number of dimensions in the projection space.
-# #' @param type A vector specifying the neighborhood graph construction. 
-# #' Expects; `c("knn", k)`, `c("enn", radius)`, or `c("proportion",ratio)`. 
-# #' Defaults to `c("knn", sqrt(nrow(data)))`, nearest neighbors equal to the 
-# #' square root of observations.
-# #' @param ... Optional, other arguments to pass to \code{\link[Rdimtools]{do.olpp}}.
-# #' @return Orthogonal matrix basis that distinguishes the levels of `class` 
-# #' based on local and non-local variation as weighted against the neighborhood 
-# #' graph.
-# #' @seealso \code{\link[Rdimtools:do.olpp]{Rdimtools::do.olpp}} for locality
-# #' preservation parameters.
-# #' @seealso \code{\link[Rdimtools:aux.graphnbd]{Rdimtools::aux.graphnbd}} for 
-# #' details on `type`.
-# #' @references
-# #' He X (2005). Locality Preserving Projections. PhD Thesis, 
-# #' University of Chicago, Chicago, IL, USA.
-# #' @export
-# #' @family basis identifiers
-# #' @examples
-# #' dat_std <- scale_sd(wine[, 2:14])
-# #' basis_olpp(data = dat_std)
-# basis_olpp <- function(data, d = 2L, type = c("knn", sqrt(nrow(data))), ...){
-#   
-#   ret <- Rdimtools::do.olpp(X = as.matrix(data),
-#                             ndim = d,
-#                             type = type,
-#                             ...)$projection
-#   rownames(ret) <- colnames(data)
-#   return(ret)
-# }
-
-#' The basis of Orthogonal Locality Preserving Projection (OLPP)
+#' The basis of Orthogonal Neighborhood Preserving Projection (OLPP)
 #' 
-#' Orthogonal Locality Preserving Projection (OLPP) is the orthogonal variant of
-#' LPP, a linear approximation to Laplacian Eigenmaps. It finds a linear 
-#' approximation to the eigenfunctions of the Laplace-Beltrami operator on the 
-#' graph-approximated data manifold. For the more details on `type` see 
+#' Orthogonal Neighborhood Preserving Projection (ONPP) is an unsupervised 
+#' linear dimension reduction method. It constructs a weighted data graph from 
+#' LLE method. Also, it develops LPP method by preserving the structure of local 
+#' neighborhoods. For the more details on `type` see 
 #' \code{\link[Rdimtools:aux.graphnbd]{Rdimtools::aux.graphnbd()}}.
 #' 
 #' @param data Numeric matrix or data.frame of the observations, coerced to matrix.
@@ -424,13 +430,14 @@ basis_odp <- function(data, class, d = 2L, type = c("proportion", 0.1), ...){
 #' @export
 #' @family basis identifiers
 #' @examples
-#' dat_std <- scale_sd(wine[, 2:14])
+#' dat_std <- scale_sd(wine[, 2:6])
 #' basis_onpp(data = dat_std)
-basis_onpp <- function(data, d = 2L, type = c("knn", sqrt(nrow(data)))){
+basis_onpp <- function(data, d = 2, type = c("knn", sqrt(nrow(data)))){
   ret <- Rdimtools::do.onpp(X = as.matrix(data),
                             ndim = d,
                             type = type)$projection
   rownames(ret) <- colnames(data)
+  colnames(ret) <- paste0("ONPP", 1L:d)
   return(ret)
 }
 
@@ -453,19 +460,20 @@ basis_onpp <- function(data, d = 2L, type = c("knn", sqrt(nrow(data)))){
 #' @export
 #' @family basis identifiers
 #' @examples 
-#' dat_std <- scale_sd(wine[, 2:14])
+#' dat_std <- scale_sd(wine[, 2:6])
 #' basis_guided(data = dat_std, index_f = tourr::holes())
 #' 
 #' basis_guided(data = dat_std, index_f = tourr::cmass(),
-#'              alpha = .4, cooling = .9, max.tries = 30)
-basis_guided <- function(data, index_f = tourr::holes(), d = 2L, ...){
-  invisible(utils::capture.output(
+#'              alpha = .4, cooling = .9, max.tries = 10, n_sample = 4)
+basis_guided <- function(data, index_f = tourr::holes(), d = 2, ...){
+  .mute <- utils::capture.output(
     hist <- tourr::save_history(
       data,
-      tourr::guided_tour(index_f = index_f, d = d, ...)
-    )
-  ))
-  return(matrix(hist[,, length(hist)], ncol = d))
+      tourr::guided_tour(index_f = index_f, d = d, ...))
+  )
+  ret <- matrix(hist[,, length(hist)], ncol = d)
+  rownames(ret) <- colnames(data)
+  return(ret)
 }
 
 
@@ -479,7 +487,7 @@ basis_guided <- function(data, index_f = tourr::holes(), d = 2L, ...){
 #' @export
 #' @family basis identifiers
 #' @examples 
-#' dat_std <- scale_sd(wine[, 2:14])
+#' dat_std <- scale_sd(wine[, 2:6])
 #' bas <- basis_half_circle(dat_std)
 basis_half_circle <- function(data){
   pp1 <- ncol(data) + 1L ## p++
@@ -487,6 +495,7 @@ basis_half_circle <- function(data){
   u_circ <- as.matrix(data.frame(y1 = sin(arc), y2 = cos(arc)))
   bas <- tourr::orthonormalise(u_circ)
   rownames(bas) <- colnames(data)
+  colnames(bas) <- paste0("half_circ", 1L:2L)
   return(bas)
 }
 
@@ -494,7 +503,7 @@ basis_half_circle <- function(data){
 #' Suggest a manipulation variable.
 #' 
 #' Find the column number of the variable with the `rank`-ith largest 
-#' contribution in the first column of the supplied basis. 
+#' contribution of the `basis`. 
 #' Useful for identifying a variable to change the contribution of in a manual 
 #' tour, it's `manip_var` argument.
 #' 
@@ -504,34 +513,78 @@ basis_half_circle <- function(data){
 #' contribution. Defaults to 1.
 #' @return Numeric scalar, the column number of a variable.
 #' @export
+#' @family manual tour
 #' @examples 
-#' dat_std <- scale_sd(wine[, 2:14])
+#' ## Setup
+#' dat_std <- scale_sd(wine[, 2:6])
 #' bas <- basis_pca(dat_std)
-#' manip_var_of(basis = bas)
-manip_var_of <- function(basis, rank = 1L){
-  if(spinifex::is_orthonormal(basis) == FALSE) 
+#' 
+#' manip_var_of(basis = bas) ## Variable with the largest contribution
+#' manip_var_of(basis = bas, rank = 5) ## Variable with 5th-largest contribution
+manip_var_of <- function(basis, rank = 1){
+  if(spinifex::is_orthonormal(basis) == FALSE)
     warning("Supplied basis isn't orthonormal.")
-  return(order(abs(basis[, 1L]), decreasing = TRUE)[rank])
+  row_norm <- sqrt(apply(basis, 1L, function(c) {sum(c^2L)}))
+  ret <- order(abs(row_norm), decreasing = TRUE)[rank]
+  names(ret) <- rownames(basis)[rank]
+  return(ret)
 }
 
-#' Preprocessing variable transformation
+#' Preprocess numeric variables
 #' 
 #' Centers and scales each column by standard deviation (sd) or to the 
 #' interval (0, 1).
 #' 
 #' @param data Numeric matrix or data.frame of the observations.
 #' @export
-#' @examples 
-#' scale_sd(data = wine[, 2:14])
+#' @examples
+#' scale_sd(data = wine[, 2:6])
 scale_sd <- function(data){
+  if(is.null(dim(data))) data <- matrix(data) ## As columnar matrix
   return(apply(data, 2L, function(c){(c - mean(c)) / stats::sd(c)}))
 }
 
 #' @rdname scale_sd
 #' @export
 #' @examples 
-#' scale_01(data = wine[, 2:14])
+#' scale_01(data = wine[, 2:6])
 scale_01 <- function(data){
+  if(is.null(dim(data))) data <- matrix(data) ## As columnar matrix
   return(apply(data, 2L, function(c) (c - min(c)) / diff(range(c))))
 }
 
+# ## <<experimental>> Mutes verbose functions, without suppressing warnings or error,
+# ## wrapper function for .mute <- capture.output(x <- value)
+# #' @examples 
+# #' ## mute assignment
+# #' mute(gt <- tourr::save_history(mtcars, max_bases = 3))
+# mute <- function(...){
+#   .mute <- capture.output(
+#     ret <- for (i in seq_len(...length())) {
+#       out <- withVisible(...elt(i))
+#       if (out$visible)
+#         print(out$value)
+#     }
+#   )
+# }
+
+
+#' A wrapper muting the text byproduct of 
+#' \code{\link[tourr:save_history]{tourr::save_history}}
+#'
+#' @inheritParams tourr::save_history
+#' @param verbose Whether or not to suppress the text output byproduct from 
+#' `tourr::save_history()`. Defaults to FALSE.
+#' @seealso \code{\link[tourr:save_history]{tourr::save_history}}
+#' @export
+#' @examples 
+#' tour_path <- save_history(data = wine[, 2:6], grand_tour(), max_bases = 10)
+#' dim(tour_path)
+save_history <- function(..., verbose = FALSE){
+  if(verbose == FALSE){
+  .mute <- utils::capture.output(
+    ret <- tourr::save_history(...))
+  } else ret <- tourr::save_history(...)
+  
+  return(ret)
+}

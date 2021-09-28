@@ -2,16 +2,17 @@
 % Please edit documentation in R/1_manual_tour.r
 \name{create_manip_space}
 \alias{create_manip_space}
-\title{Create a manipulation space to rotate the manip variable in.}
+\title{Create a manipulation space to rotate the manipulation variable in.}
 \usage{
-create_manip_space(basis, manip_var)
+create_manip_space(basis, manip_var = manip_var_of(basis))
 }
 \arguments{
 \item{basis}{A (p, d) orthonormal numeric matrix,
 the linear combination the original variables contribute to projection frame.
 Required, no default.}
 
-\item{manip_var}{The number of the variable/column to rotate.}
+\item{manip_var}{The number of the variable/column to rotate. Defaults to
+\code{manip_var_of(basis)}, the variable with the largest contribution in the basis.}
 }
 \value{
 A (p, d + 1) orthonormal matrix, the manipulation space to
@@ -20,13 +21,17 @@ manipulate the projection in.
 \description{
 Typically called by \code{manual_tour()}. Creates a (p, d) orthonormal matrix,
 the manipulation space from the given basis right concatenated with a zero
-vector, with manip_var set to 1.
+vector, with \code{manip_var} set to 1.
 }
 \examples{
 ## Setup
-dat_std <- scale_sd(wine[, 2:14])
+dat_std <- scale_sd(wine[, 2:6])
 bas <- basis_pca(dat_std)
 mv <- manip_var_of(bas)
-
 create_manip_space(basis = bas, manip_var = mv)
+
+## d = 1 case 
+bas1d <- basis_pca(dat_std, d = 1)
+mv <- manip_var_of(bas1d)
+create_manip_space(bas1d, mv)
 }

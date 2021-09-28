@@ -1,14 +1,15 @@
 ---
-title: "spinifex"
+title: "Getting started with spinifex"
 author: "Nicholas Spyrison"
-date: "`r Sys.Date()`"
-output: 
+date: '`r format(Sys.Date())`'
+output:
   rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{spinifex}
+  %\VignetteIndexEntry{Getting started with spinifex}
   %\VignetteEngine{knitr::rmarkdown}
-  %\VignetteEncoding{UTF-8}{inputenc}
-  \usepackage[utf8]{inputenc}
+  %\VignetteEncoding{UTF-8}
+editor_options:
+  chunk_output_type: console
 ---
 <!-- #Example vignette: 
 https://github.com/njtierney/naniar/blob/master/vignettes/getting-started-w-naniar.Rmd -->
@@ -59,8 +60,8 @@ We focus on the application of the *manual tours* in this document. In a manual 
 In the below examples we go through some use cases for manual tours. To get started we'll load a couple packages we use.
 
 ```{r pkgs}
-library("spinifex")
 library("tourr")
+library("spinifex")
 library("ggplot2")
 library("dplyr")
 ```
@@ -77,22 +78,28 @@ dat_std <- scale_sd(tourr::flea[,-7])
 bas_pca <- basis_pca(dat_std)
 clas <- tourr::flea[, 7]
 
-view_frame(basis = bas_pca)
+ggtour(basis_array = bas_pca, data = dat_std) +
+  proto_default(aes_args = list(color = clas))
 ```
 
 We started from a random basis, that explains the orthogonal projection from $p$ to $d$ space. Use `view_frame()` to see the *reference axes*, a visual depiction of how the variables contributed to the xy directions of the 2D projection.
 
-We want to explore how the coefficients of `aede2`, the *manip var*, contributed to the structure in this projection. In order to change the contributions without breaking the orthogonality of the other variables, we need to add a dimension. We call this new space the manipulation space, which can be viewed with the function `view_manip_space()`. Note that the projection plane containing the reference frame is laid down on the surface, while the manipulation dimension is at a right angle out-of-plane, with a full contribution on the manip var.
+We want to explore how the coefficients of `aede2` contribute to the structure in this projection, so we set the manip_var to its column number, 3. In order to change the contributions without breaking the orthogonality of the other variables, we need to add a dimension. We call this new space the manipulation space, which can be viewed with the function `view_manip_space()`. Note that the projection plane containing the reference frame is laid down on the surface, while the manipulation dimension is at a right angle out-of-plane, with a full contribution on the manip var.
 
 ```{r view-manip-space}
-view_manip_space(basis = bas_pca, manip_var = 3, lab = colnames(dat_std)) 
+view_manip_space(basis = bas_pca, manip_var = 3) 
 ```
 
 Now we have the freedom to change the contributions of `aede2`, we do so by controlling the values of the in-plane angle, $\theta$, and the out of plane angle, $\phi$. in this example we'll perform a radial manual tour, holding $\theta$ constant while we vary the values of $\phi$ to remove and maximize the contribution of the manip var.
 
-```{r, eval=F}
-play_manual_tour(data = dat_std, basis = bas_pca, manip_var = 3, axes = "bottomleft",
-                 aes_args = list(color = clas, shape = clas))
+```{r}
+mt_path <- manual_tour(basis = bas_pca, manip_var = 3)
+
+my_ggtour <- ggtour(basis_array = mt_path, data = dat_std) +
+  proto_default(aes_args = list(color = clas, shape = clas))
+```
+```{r, eval=FALSE}
+animate_plotly(ggtour = my_ggtour)
 ```
 
 *plotly animation not rendered in this vignette, but will display in viewer*
@@ -104,8 +111,7 @@ Another of the *manual tour* is the creation a *glyph-maps*, where time series c
 ```{r, echo=F}
 nasa <- select(GGally::nasa, lat, long, day, surftemp)
 
-temp.gly <-
-  GGally::glyphs(nasa, "long", "day", "lat", "surftemp", height = 2.5)
+temp.gly <- GGally::glyphs(nasa, "long", "day", "lat", "surftemp", height = 2.5)
 glyph <-
   ggplot(temp.gly, aes(gx, gy, group = gid)) +
   GGally::add_ref_lines(temp.gly, color = "grey90") +
@@ -119,8 +125,10 @@ We'll perform a horizontal rotation and followed by the vertical rotation before
 
 ```{r Horizontal}
 ## Initialize
-nasa_std <- 
-  cbind(GGally::nasa[c("x", "y")], tourr::rescale(GGally::nasa[c("day", "surftemp")]))
+nasa_std <- cbind(
+  GGally::nasa[c("x", "y")],
+  scale_sd(GGally::nasa[c("day", "surftemp")])
+)
 bas <- tourr::basis_init(ncol(nasa_std), 2)
 
 ## Horizontal rotation
@@ -154,26 +162,36 @@ ggplot(rot_xy, aes(x = x, y = y)) + geom_point(size = 0.3) +
 Radial tours are often employed after an interesting feature has been identified. How the contributions of each variable impact the structure of resulting PCA, for example, might be interesting to explore. Alternatively, we can perform projection pursuit to maximize an objective function within the projection and performing a hill-climbing algorithm and explore what effect the contributions of the variables have there. Let's do just that, optimizing a Holes indexed guided tour using the package `tourr`.
 
 ```{r}
-dat_std <- tourr::rescale(tourr::flea[,1:6])
-fpath    <- tourr::save_history(dat_std, tourr::guided_tour(tourr::holes()))
+dat_std <- scale_sd(tourr::flea[, 1:6])
+holes_path <- tourr::save_history(dat_std, tourr::guided_tour(tourr::holes(), ))
+
+ggt <- ggtour(holes_path, dat_std) + proto_default()
 ```
-```{r, eval=F}
-play_tour_path(tour_path = fpath, data = dat_std, angle = .15, 
-  render_type = render_gganimate, col = tourr::flea$species, fps = 4)
+```{r, eval=FALSE}
+animate_plotly(ggt)
 ```
 
 This shows the optimization path of the holes index. We'll grab the reference axes from the last frame and used that a starting orientation for a manual tour.
 
 ```{r}
-f_holes_bas  <- matrix(as.numeric(fpath[,, dim(fpath)[3]]), ncol = 2)
-view_frame(f_holes_bas, lab = colnames(dat_std))
+## We added the basis_* functions, including basis_guided() to help:
+holes_bas <- basis_guided(dat_std, index_f = tourr::holes(), d = 2)
+
+ggtour(holes_bas, dat_std) +
+  proto_default(aes_args = list(color = clas, shape = clas))
 ```
 
 We'll select `aede2` as the manip_var, as it is mostly orthogonal to four of the other variables and often has a larger contribution than `tars1`.
 
-```{r, eval=F}
-play_manual_tour(data = dat_std, basis = f_holes_bas, 
-                 manip_var = 5, col = tourr::flea$species)
+```{r}
+## Alternatively, ask for the variable by rank of the magnitude in the basis:
+(mv <- manip_var_of(holes_bas, rank = 1))
+mt_path <- manual_tour(holes_bas, mv)
+ggt <- ggtour(mt_path, dat_std) +
+  proto_default(aes_args = list(color = clas, shape = clas))
+```
+```{r, eval=FALSE}
+animate_plotly(ggt)
 ```
 
 We can see that `aede2` is important in distinguishing between the purple cluster and the green cluster. However, even when its contribution is zeros the contribution of `tars1` is enough to keep the cluster from overlapping.

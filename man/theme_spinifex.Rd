@@ -5,7 +5,10 @@
 \title{A ggplot2 theme suggested for linear projections with spinifex.
 The default value for ggproto arguments in spinifex functions.}
 \usage{
-theme_spinifex()
+theme_spinifex(...)
+}
+\arguments{
+\item{...}{Optionally pass arguments to \code{ggplot2::theme()}.}
 }
 \description{
 A ggplot2 theme suggested for linear projections with spinifex.
@@ -17,4 +20,7 @@ theme_spinifex()
 require("ggplot2")
 ggplot(mtcars, aes(wt, mpg, color = as.factor(cyl))) +
   geom_point() + theme_spinifex()
+}
+\seealso{
+\code{\link[ggplot2:theme]{ggplot2::theme}} for all theme options.
 }

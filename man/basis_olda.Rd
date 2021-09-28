@@ -4,7 +4,7 @@
 \alias{basis_olda}
 \title{The basis of Orthogonal Linear Discriminant Analysis (OLDA)}
 \usage{
-basis_olda(data, class, d = 2L)
+basis_olda(data, class, d = 2)
 }
 \arguments{
 \item{data}{Numeric matrix or data.frame of the observations, coerced to matrix.}
@@ -22,7 +22,7 @@ Orthogonal LDA (OLDA) is an extension of classical LDA where the discriminant
 vectors are orthogonal to each other.
 }
 \examples{
-dat_std <- scale_sd(wine[, 2:14])
+dat_std <- scale_sd(wine[, 2:6])
 clas <- wine$Type
 basis_olda(data = dat_std, class = clas)
 }

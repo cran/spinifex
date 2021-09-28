@@ -2,9 +2,10 @@
 % Please edit documentation in R/0_util.r
 \name{as_history_array}
 \alias{as_history_array}
-\title{Changes an array of bases into a "history_array" for use in \code{tourr::interpolate}}
+\title{Changes an array of bases into a "history_array" class for use
+in \code{tourr::interpolate()}.}
 \usage{
-as_history_array(basis_array, data)
+as_history_array(basis_array, data = NULL)
 }
 \arguments{
 \item{basis_array}{An array of bases.}
@@ -17,11 +18,12 @@ An array of numeric bases with custom class "history_array" for
 consumption by \code{tourr::interpolate}.
 }
 \description{
-Attaches data to an array and assigns the custom class "history_array" as
-used in \code{tourr}. Typically called by other \code{spinifex} functions.
+Internal function, many end users will not need this. Attaches data to an array and assigns the custom class "history_array" as
+used in \code{tourr}. Typically called by basis arrays from \code{spinifex} functions.
 }
 \examples{
-dat_std <- scale_sd(wine[, 2:14])
+## !!This function is not meant for external use!!
+dat_std <- scale_sd(wine[, 2:6])
 bas <- basis_pca(dat_std)
 mv <- manip_var_of(bas)
 mt_array <- manual_tour(basis = bas, manip_var = mv)

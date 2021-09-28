@@ -4,7 +4,7 @@
 \alias{basis_guided}
 \title{Solve for the last basis of a guided tour.}
 \usage{
-basis_guided(data, index_f = tourr::holes(), d = 2L, ...)
+basis_guided(data, index_f = tourr::holes(), d = 2, ...)
 }
 \arguments{
 \item{data}{Numeric matrix or data.frame of the observations.}
@@ -26,11 +26,11 @@ extrema. Returns only the last identified basis of the optimization. A
 truncated, muted extension of tourr::save_history(guided_tour())).
 }
 \examples{
-dat_std <- scale_sd(wine[, 2:14])
+dat_std <- scale_sd(wine[, 2:6])
 basis_guided(data = dat_std, index_f = tourr::holes())
 
 basis_guided(data = dat_std, index_f = tourr::cmass(),
-             alpha = .4, cooling = .9, max.tries = 30)
+             alpha = .4, cooling = .9, max.tries = 10, n_sample = 4)
 }
 \seealso{
 \code{\link[tourr:guided_tour]{tourr::guided_tour}} for annealing

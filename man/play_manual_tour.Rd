@@ -48,11 +48,12 @@ function used in \code{render_type}.}
 An animation of a radial tour.
 }
 \description{
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#superseded}{\figure{lifecycle-superseded.svg}{options: alt='[Superseded]'}}}{\strong{[Superseded]}}, see \code{\link{ggtour}}.
 Performs the a manual tour and returns an animation of \code{render_type}.
 For use with \code{tourr::save_history()} tour paths see \code{play_tour_path()}.
 }
 \examples{
-dat_std <- scale_sd(wine[, 2:14])
+dat_std <- scale_sd(wine[, 2:6])
 clas <- wine$Type
 bas <- basis_pca(dat_std)
 mv <- manip_var_of(bas)
@@ -79,8 +80,7 @@ if(F){ ## Don't run by mistake
   play_manual_tour(basis = bas, data = dat_std, manip_var = 1,
                    render_type = render_gganimate,
                    gif_filename = "myRadialTour.gif", gif_path = "./output")
-}
-}
+}}
 }
 \seealso{
 \code{\link{render_}} For arguments to pass into \code{...}.

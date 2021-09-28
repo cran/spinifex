@@ -4,22 +4,19 @@
 \alias{basis_pca}
 \title{The basis of Principal Component Analysis (PCA)}
 \usage{
-basis_pca(data, d = 2L)
+basis_pca(data, d = 2)
 }
 \arguments{
 \item{data}{Numeric matrix or data.frame of the observations.}
 
 \item{d}{Number of dimensions in the projection space.}
 }
-\value{
-A numeric matrix, an orthogonal basis that best distinguishes the
-group means of \code{class}.
-}
 \description{
-The basis of Principal Component Analysis (PCA)
+The orthogonal linear components of the variables in the next largest
+direction of variance.
 }
 \examples{
-dat_std <- scale_sd(wine[, 2:14])
+dat_std <- scale_sd(wine[, 2:6])
 basis_pca(data = dat_std)
 }
 \seealso{

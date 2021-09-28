@@ -44,35 +44,35 @@ For example, \code{geom_point(aes(), size = 2, alpha = .7)} becomes
 \item{...}{Passes arguments to \code{render_(...)}.}
 }
 \description{
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#superseded}{\figure{lifecycle-superseded.svg}{options: alt='[Superseded]'}}}{\strong{[Superseded]}}, see \code{\link{ggtour}}.
 Takes the result of \code{array2df()} and renders them into a
 \emph{gganimate} animation.
 }
 \examples{
-dat_std <- scale_sd(wine[, 2:14])
+dat_std <- scale_sd(wine[, 2:6])
 clas <- wine$Type
 bas <- basis_pca(dat_std)
 mv <- manip_var_of(bas)
-manual_array <- manual_tour(basis = bas, manip_var = mv)
-manual_df <- array2df(array = manual_array, data = dat_std)
+mt <- manual_tour(basis = bas, manip_var = mv)
+mt_df_ls <- array2df(basis_array = mt, data = dat_std)
 
 \dontrun{
-render_gganimate(frames = manual_df)
+render_gganimate(frames = mt_df_ls)
 
 require("ggplot2")
-render_gganimate(frames = manual_df, axes = "bottomleft",
-                 fps = 10, rewind = TRUE, start_pause = 1, end_pause = 1.5,
-                 aes_args = list(color = clas, shape = clas),
-                 identity_args = list(size = 2, alpha = .7),
-                 ggproto = list(theme_void(),
-                                ggtitle("My title"),
-                                scale_color_brewer(palette = "Set2")))
+render_gganimate(
+  frames = mt_df_ls, axes = "bottomleft",
+  fps = 10, rewind = TRUE, start_pause = 1, end_pause = 1.5,
+  aes_args = list(color = clas, shape = clas),
+  identity_args = list(size = 2, alpha = .7),
+  ggproto = list(theme_void(),
+                 ggtitle("My title"),
+                 scale_color_brewer(palette = "Set2")))
 
 ## Saving a .gif(may require additional setup)
-if(F){ ## Don't run by mistake
-  render_gganimate(frames = manual_df, axes = "bottomleft",
-                   gif_filename = "myRadialTour.gif", gif_path = "./output")
-}
-}
+if(F) ## Don't run by mistake
+  render_gganimate(frames = mt_df_ls, axes = "bottomleft",
+                   gif_filename = "myRadialTour.gif", gif_path = "./output")}
 }
 \seealso{
 \code{\link{render_}} for \code{...} arguments.

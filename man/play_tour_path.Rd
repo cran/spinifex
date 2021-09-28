@@ -19,24 +19,26 @@ play_tour_path(
 
 \item{angle}{Target distance (in radians) between steps. Defaults to .05.}
 
-\item{render_type}{Graphics to render to. Defaults to \verb{render_plotly``, alternative use }render_gganimate`.}
+\item{render_type}{Graphics to render to. Defaults to \code{render_plotly},
+alternative use \code{render_gganimate}.}
 
 \item{...}{Optionally pass additional arguments to \code{render_} and the
 function used in \code{render_type}.}
 }
 \description{
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#superseded}{\figure{lifecycle-superseded.svg}{options: alt='[Superseded]'}}}{\strong{[Superseded]}}, see \code{\link{ggtour}}.
 Takes the result of \code{tourr::save_history()} or \code{manual_tour()}, interpolates
 over the path and renders into a specified \code{render_type}.
 }
 \examples{
-dat_std <- scale_sd(wine[, 2:14])
+dat_std <- scale_sd(wine[, 2:6])
 clas <- wine$Type
 bas <- basis_pca(dat_std)
 
-\dontrun{
 ## Tour history from tourr::save_history
 g_path <- tourr::save_history(dat_std, tour_path = tourr::grand_tour(), max = 5)
 
+\dontrun{
 play_tour_path(tour_path = g_path,  data = dat_std)
 
 play_tour_path(tour_path = g_path, data = dat_std,
@@ -58,8 +60,7 @@ if(F){ ## Don't run by mistake
   play_tour_path(tour_path = tpath, data = dat_std,
                  render_type = render_gganimate,
                  gif_path = "myOutput", gif_filename = "myRadialTour.gif")
-}
-}
+}}
 }
 \seealso{
 \code{\link{render_}} For arguments to pass into \code{...}.

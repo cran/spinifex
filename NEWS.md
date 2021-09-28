@@ -1,13 +1,39 @@
+# spinifex v0.3.1
+
+- Fixed 'phi issue' where manual tours were not consistent in their initial direction, now always move toward full contribution before 0 contribution.
+- Interpolation of manual tours now handled in `ggtour()` synchronizes `angle` usage with `{tourr}` tours
+- `manual_tour()` and related functions now handle 1D projections
+- New functions: `proto_highlight/1d()` for highlighting specific points in ggtours
+- New function: `filmstrip()`, creates a ggplot faceting the frames of a ggtour for a static output
+- New dataset: `penguins`, from `palmerpenguins::penguins`, removed NA
+rows & reordered columns
+- Added argument `rownum_index` to `proto_text`, for labeling subsets
+- Experimental wrapper function `spinifex::save_history`, muting the noisy execution of `tourr::save_history`
+
+
+# spinifex v0.3.0!
+
+- New ggproto api for visuals, see `?ggplot_tour()` to get started!!
+-- 10x new `proto_*` functions, essentially `geoms_*` for animated tours: 
+basis/1d, point, origin/1d, density, text, hex, default/1d.
+-- 2x animation funcs; `animate_plotly()` and `aniamte_gganimate()`
+-- 2x internal utility functions
+- New vignette demonstrating this api `vignette("ggproto_api", "spinifex")`
+- Shiny app now imports .csv & .rds,  code improved, uses new ggproto api
+-- `run
+- Fixed a format issue with the `BeastCancer` dataset
+
+
 # spinifex v0.2.8
 
-- Vectorized all for loops
+- Vectorized all `for` loops
 - `manip_var_of(basis)` suggests a variable to used based on the rank of the contributions of the basis.
 
 Basis_* functions to find features of interest, powered by `{Rdimtools}`.
 - `basis_olda()`
 - `basis_odp()`
-- `basis_odp()`
-- `basis_odp()`
+- `basis_onpp()`
+- `basis_olpp()`
 
 New util functions:
 - `scale_sd()` center and scale each variable by it's standard deviation
@@ -19,8 +45,9 @@ New util functions:
 # spinifex v0.2.7
 
 - Gives deprecated warning when using `view_basis()` and `oblique_basis()`, no longer listed in `view_frame()` documentation
-- Fixed intro shiny app to reflect argument changes
+- Fixed "radial_tour" shiny app to reflect argument changes
 - Fixed example run time for `render_plotly()` going longer than 10 seconds
+
 
 # spinifex v0.2.6
 
@@ -52,11 +79,11 @@ New util functions:
 - Clarified and more consistent documentation
 
 
-# spinifex v0.2.0
+# spinifex v0.2.0!
 
 ## Demo shiny app
 
-- `run_app("intro")`
+- `run_app("radial_tour")`
 
 ## New functions
 To accommodate interactive use, rather than predefined paths:
@@ -65,9 +92,9 @@ To accommodate interactive use, rather than predefined paths:
 - `oblique_frame()`
 - `run_app()` New shiny app!
 
-## New utility & internally-aimed functions
+## New utility functions
 
-- `pan_zoom()`
+- `map_absolute()`
 - `is_orthonormal()` slightly more general than `tourr::is_orthonormal()`
 
 ## Other changes

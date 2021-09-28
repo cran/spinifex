@@ -10,7 +10,7 @@ view_frame(
   manip_var = NULL,
   theta = 0L,
   phi = 0L,
-  label = abbreviate(row.names(basis), 3L),
+  basis_label = abbreviate(row.names(basis), 3L),
   rescale_data = FALSE,
   ...
 )
@@ -30,38 +30,45 @@ on the xy plane of the reference frame. Defaults to 0, no rotation.}
 \item{phi}{Angle in radians of the "out-of-projection plane" rotation, into
 the z-direction of the axes. Defaults to 0, no rotation.}
 
-\item{label}{Optionally, provide a character vector of length p (or 1)
-to label the variable contributions to the axes, Default NULL,
-results in a 3 character abbreviation of the variable names.}
+\item{basis_label}{Optional, character vector of \code{p} length, add name to the axes
+in the frame, defaults to 3 letter abbreviation of the original variable names.}
 
 \item{rescale_data}{When TRUE scales the data to between 0 and 1.
 Defaults to FALSE.}
 
-\item{...}{Optionally pass additional arguments to the \code{render_type} for
+\item{...}{Optionally pass additional arguments to the \code{proto_default} for
 projection point aesthetics;}
 }
 \value{
 A ggplot object of the rotated projection.
 }
 \description{
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#superseded}{\figure{lifecycle-superseded.svg}{options: alt='[Superseded]'}}}{\strong{[Superseded]}}, see \code{\link{ggtour}}.
 Projects the specified rotation as a 2D ggplot object. One static frame of
 manual tour. Useful for providing user-guided interaction.
 }
 \examples{
-dat_std <- scale_sd(wine[, 2:14])
+## Setup
+dat_std <- scale_sd(wine[, 2:6])
 clas <- wine$Type
 bas <- basis_pca(dat_std)
 mv <- manip_var_of(bas)
 
+## Minimal example
+\dontrun{
 view_frame(basis = bas)
 
-view_frame(basis = bas, data = dat_std, manip_var = mv)
+## Typical example
+view_frame(basis = bas, data = dat_std, manip_var = mv, axes = "left")
 
+## Full example
 rtheta <- runif(1, 0, 2 * pi)
 rphi   <- runif(1, 0, 2 * pi)
 view_frame(basis = bas, data = dat_std, manip_var = mv,
-           theta = rtheta, phi = rphi, label = paste0("MyNm", 1:ncol(dat_std)), 
+           theta = rtheta, phi = rphi, basis_label = paste0("MyNm", 1:ncol(dat_std)), 
            aes_args = list(color = clas, shape = clas),
-           identity_args = list(size = 1.5, alpha = .7),
-           ggproto = list(ggplot2::theme_void(), ggplot2::ggtitle("My title")))
+           identity_args = list(size = 1.5, alpha = .7))}
+}
+\seealso{
+\code{\link{proto_default}} For arguments to pass into \code{...}.
 }

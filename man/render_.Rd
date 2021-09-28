@@ -20,7 +20,7 @@ render_(
 
 \item{axes}{Position of the axes, expects one of:
 "center", "left", "right", "bottomleft", "topright", "off", or a
-pan_zoom() call. Defaults to "center".}
+map_absolute() call. Defaults to "center".}
 
 \item{manip_col}{String of the color to highlight the \code{manip_var}, if used.
 Defaults to "blue".}
@@ -48,28 +48,29 @@ Anything that would be "added" to ggplot(); in the case of applying a theme,
 Intended for aesthetic ggplot2 functions (not geom_* family).}
 }
 \description{
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#superseded}{\figure{lifecycle-superseded.svg}{options: alt='[Superseded]'}}}{\strong{[Superseded]}}, see \code{\link{ggtour}}.
 Typically called by \code{render_plotly()} or \code{render_gganimate()}. Takes the
 result of \code{array2df()}, and renders them into a ggplot2 object.
 }
 \examples{
 ## Setup
-dat_std <- scale_sd(wine[, 2:14])
+dat_std <- scale_sd(wine[, 2:6])
 clas <- wine$Type
 bas <- basis_pca(dat_std)
 mv <- manip_var_of(bas)
 
-manual_array <- manual_tour(basis = bas, manip_var = mv)
-manual_df <- array2df(array = manual_array, data = dat_std)
+mt_array <- manual_tour(basis = bas, manip_var = mv)
+mt_df_ls <- array2df(basis_array = mt_array, data = dat_std)
 
 ## Required arguments
-render_(frames = manual_df)
+render_(frames = mt_df_ls)
 
 ## Full arguments
 require("ggplot2")
-render_(frames = manual_df, axes = "left", manip_col = "purple",
-   aes_args = list(color = clas, shape = clas),
-   identity_args = list(size = 1.5, alpha = .7),
-   ggproto = list(theme_minimal(),
-                  ggtitle("My title"),
-                  scale_color_brewer(palette = "Set2")))
+render_(frames = mt_df_ls, axes = "left", manip_col = "purple",
+        aes_args = list(color = clas, shape = clas),
+        identity_args = list(size = 1.5, alpha = .7),
+        ggproto = list(theme_minimal(),
+                       ggtitle("My title"),
+                       scale_color_brewer(palette = "Set2")))
 }

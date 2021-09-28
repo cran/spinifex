@@ -9,19 +9,20 @@ mv <- manip_var_of(bas)
 ## RENDERING -----
 ## ggplot2, gganimate, and plotly respectively
 ##
-array_manual <- manual_tour(basis = bas, manip_var = mv)
-df_manual <- array2df(array = array_manual, data = dat_std,
-                      label = paste0("MyLabs", 1:nrow(bas)))
+mt_array <- manual_tour(basis = bas, manip_var = mv)
+mt_df_ls <- array2df(basis_array = mt_array, data = dat_std,
+                      basis_label = paste0("MyLabs", 1:nrow(bas)),
+                      data_label = paste0("obs# ", 1:nrow(dat_std)))
 
 ### render_ -----
 library("ggplot2")
-ret <- render_(frames = df_manual, axes = "left", manip_col = "purple",
-               aes_args = list(color = clas, shape = clas),
-               identity_args = list(size = .8, alpha = .7),
-               ggproto = list(theme_spinifex(),
-                              ggtitle("My title"),
-                              scale_color_brewer(palette = "Set2")))
 
+suppressWarnings( ## suppress 8hr deprecation warning
+  ret <- render_(frames = mt_df_ls, axes = "left", manip_col = "purple",
+                 aes_args = list(color = clas, shape = clas),
+                 identity_args = list(size = .8, alpha = .7),
+                 ggproto = list(theme_spinifex(), ggtitle("My title")))
+)
 
 test_that("render_, class and dim", {
   expect_is(ret, c("gg", "ggplot"))
@@ -29,14 +30,13 @@ test_that("render_, class and dim", {
 })
 
 ### render_gganimate -----
-
-
-ret <- render_gganimate(frames = df_manual, axes = "left", manip_col = "purple",
-                        aes_args = list(color = clas, shape = clas),
-                        identity_args = list(size = .8, alpha = .7),
-                        ggproto = list(theme_spinifex(),
-                                       ggtitle("My title"),
-                                       scale_color_brewer(palette = "Set2")))
+suppressWarnings( ## suppress 8hr deprecation warning
+  ret <- render_gganimate(
+    frames = mt_df_ls, axes = "left", manip_col = "purple",
+    aes_args = list(color = clas, shape = clas),
+    identity_args = list(size = .8, alpha = .7),
+    ggproto = list(theme_spinifex(), ggtitle("My title")))
+)
 
 test_that("render_gganimate, class and dim", {
   expect_true(class(ret)  %in% c("gif_image", "character"))
@@ -46,13 +46,12 @@ test_that("render_gganimate, class and dim", {
 
 ### render_plotly -----
 
-ret <- render_plotly(frames = df_manual, axes = "bottomleft", fps = 10,
-              tooltip = c("label", "frame", "x", "y"),
-              aes_args = list(color = clas, shape = clas),
-              identity_args = list(size = .8, alpha = .7),
-              ggproto = list(theme_classic(),
-                             ggtitle("My title"),
-                             scale_color_brewer(palette = "Set2")))
+ret <- render_plotly(
+  frames = mt_df_ls, axes = "bottomleft", fps = 10, 
+  aes_args = list(color = clas, shape = clas),
+  identity_args = list(size = .8, alpha = .7),
+  ggproto = list(theme_classic(), ggtitle("My title"),
+                 scale_color_brewer(palette = "Set2")))
 
 test_that("render_gganimate, class and dim", {
   expect_is(ret, c("plotly", "htmlwidget"))

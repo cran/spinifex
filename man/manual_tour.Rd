@@ -10,9 +10,8 @@ manual_tour(
   manip_var,
   theta = NULL,
   phi_min = 0L,
-  phi_max = 0.5 * pi,
-  angle = 0.05,
-  ...
+  phi_max = pi/2,
+  data = NULL
 )
 }
 \arguments{
@@ -34,10 +33,7 @@ Required, defaults to 0.}
 the "out-of-plane" rotation, the z-axis of the reference frame.
 Required, defaults to pi/2.}
 
-\item{angle}{Target distance (in radians) between steps. Defaults to .05.}
-
-\item{...}{Handles unused arguments that are being also being passed from
-\code{play_manual_tour()} to \code{render_()}.}
+\item{data}{Optionally attach data to the basis path.}
 }
 \value{
 A (p, d, 4) history_array of the radial tour. The bases set for
@@ -50,15 +46,27 @@ position to \code{phi_max}, to \code{phi_min}, and back to the start position.
 }
 \examples{
 ## Setup
-dat_std <- scale_sd(wine[, 2:14])
+dat_std <- scale_sd(wine[, 2:6])
 clas <- wine$Type
 bas <- basis_pca(dat_std)
 mv <- manip_var_of(bas)
-
-## Required arguments
 manual_tour(basis = bas, manip_var = mv)
 
-## Full arguments
+## All arguments
 manual_tour(basis = bas, manip_var = mv,
-            theta = pi / 2, phi_min = pi / 16, phi_max = pi, angle = .8)
+            theta = pi / 2, phi_min = pi / 16, phi_max = pi)
+
+## d = 1 case
+bas1d <- basis_pca(dat_std, d = 1)
+mv <- manip_var_of(bas1d)
+manual_tour(basis = bas1d, manip_var = mv)
+
+## Animating with ggtour() & proto_*
+mt <- manual_tour(basis = bas, manip_var = mv)
+ggt <- ggtour(mt, dat_std, angle = .2) +
+    proto_origin() +
+    proto_point(list(color = clas, shape = clas)) +
+    proto_basis()
+\dontrun{
+animate_plotly(ggt)}
 }
