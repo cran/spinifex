@@ -37,33 +37,44 @@ Animates the ggplot return of \code{ggtour()} and added \verb{proto_*()} functio
 .gif without interaction, through use of \code{{gganimate}}.
 }
 \examples{
-dat <- scale_sd(tourr::flea[, 1:6])
-clas <- tourr::flea$species
-bas <- basis_pca(dat)
-mv <- manip_var_of(bas)
+library(spinifex)
+dat     <- scale_sd(penguins[, 1:4])
+clas    <- penguins$species
+bas     <- basis_pca(dat)
+mv      <- manip_var_of(bas)
 mt_path <- manual_tour(bas, manip_var = mv)
 
-ggt <- ggtour(mt_path, dat, angle = .1) +
-  proto_basis() +
-  proto_origin() +
-  proto_point(aes_args = list(color = clas, shape = clas),
-              identity_args = list(size = 1.5, alpha = .7))
-
+ggt <- ggtour(mt_path, dat, angle = .3) +
+  proto_default(aes_args = list(color = clas, shape = clas),
+                identity_args = list(size = 1.5, alpha = .7))
 \dontrun{
 animate_gganimate(ggt)
 
-## Example saving gganime to a .gif, may require additional setup.
-if(F){
-  anim <- animate_gganimate(ggt, fps = 10, rewind = TRUE,
-                            start_pause = 1, end_pause = 2)
+if(F){ ## Don't accidentally save file
+  ## Alternative arguments storing to a variable for saving
+  anim <- animate_gganimate(
+    ggt, fps = 10, rewind = TRUE,
+    start_pause = 1, end_pause = 2,
+    height = 6, width = 10, units = "cm", ## "px", "in", "cm", or "mm."
+    res = 150)
+  ## Save rendered animation as .gif
   gganimate::anim_save("my_tour.gif",
                        animation = anim,
-                       path = "./figures")}}
+                       path = "./figures")
+  
+  ## Alternative renderer saving directly as an .mp4
+  animate_gganimate(ggt,
+    height = 10, width = 18, units = "cm", ## "px", "in", "cm", or "mm."
+    res = 150, ## resolution, not the same as dpi, 100 seems about 1x zoom 
+    render = gganimate::av_renderer("./my_tour.mp4")) ## Alternative render
+  }
+}
 }
 \seealso{
 \code{\link[gganimate:animate]{gganimate::animate}}
 
 Other ggtour animator: 
-\code{\link{animate_plotly}()}
+\code{\link{animate_plotly}()},
+\code{\link{filmstrip}()}
 }
 \concept{ggtour animator}

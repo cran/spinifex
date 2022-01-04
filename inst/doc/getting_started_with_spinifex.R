@@ -22,15 +22,15 @@ library("ggplot2")
 library("dplyr")
 
 ## ----view-basis---------------------------------------------------------------
-dat_std <- scale_sd(tourr::flea[,-7])
+dat_std <- scale_sd(penguins[, 1:4])
 bas_pca <- basis_pca(dat_std)
-clas <- tourr::flea[, 7]
+clas    <- penguins$species
 
 ggtour(basis_array = bas_pca, data = dat_std) +
-  proto_default(aes_args = list(color = clas))
+  proto_basis()
 
 ## ----view-manip-space---------------------------------------------------------
-view_manip_space(basis = bas_pca, manip_var = 3) 
+view_manip_space(basis = bas_pca, manip_var = 1) 
 
 ## -----------------------------------------------------------------------------
 mt_path <- manual_tour(basis = bas_pca, manip_var = 3)
@@ -84,8 +84,8 @@ ggplot(rot_xy, aes(x = x, y = y)) + geom_point(size = 0.3) +
   theme_bw() + labs(x = "", y = "")
 
 ## -----------------------------------------------------------------------------
-dat_std <- scale_sd(tourr::flea[, 1:6])
-holes_path <- tourr::save_history(dat_std, tourr::guided_tour(tourr::holes(), ))
+dat_std    <- scale_sd(penguins[, 1:4])
+holes_path <- save_history(dat_std, tourr::guided_tour(tourr::holes(), ))
 
 ggt <- ggtour(holes_path, dat_std) + proto_default()
 
@@ -107,5 +107,5 @@ ggt <- ggtour(mt_path, dat_std) +
   proto_default(aes_args = list(color = clas, shape = clas))
 
 ## ---- eval=FALSE--------------------------------------------------------------
-#  animate_plotly(ggt)
+#  animate_gganimate(ggt, renderer = gganimate::av_renderer())
 

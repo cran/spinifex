@@ -4,52 +4,44 @@
 \alias{filmstrip}
 \title{Create a "filmstrip" of the frames of a ggtour.}
 \usage{
-filmstrip(ggtour)
+filmstrip(ggtour, ...)
 }
 \arguments{
 \item{ggtour}{A grammar of graphics tour with appended protos added.
-A return from \verb{ggtour() + proto_*()}.}
+A return from \verb{ggtour() + proto_*()}}
+
+\item{...}{optionally pass arguments to ggplot2::facet_wrap, such as
+nrow = 3, ncol = 2, scales = "free".}
 }
 \description{
 Appends \code{facet_wrap(vars(frame_number))} & minor themes to the ggtour. If the
 number of frames is more than desired, try increasing the \code{angle} argument on
-the tour.
+the tour. Is very demanding on the plots pane, works better with ggsave().
 }
 \examples{
-dat <- scale_sd(tourr::flea[, 1:6])
-clas <- tourr::flea$species
-bas <- basis_pca(dat)
-mv <- manip_var_of(bas)
+dat  <- scale_sd(penguins[, 1:4])
+clas <- penguins$species
+bas  <- basis_pca(dat)
+mv   <- manip_var_of(bas)
 
 ## d = 2 case
 mt_path <- manual_tour(bas, manip_var = mv)
-ggt <- ggtour(mt_path, dat, angle = .25) +
-  proto_basis() +
+ggt <- ggtour(mt_path, dat, angle = .3) +
   proto_point(list(color = clas, shape = clas),
-              list(size = 1.5))
+              list(size = 1.5)) +
+  proto_basis()
 filmstrip(ggt)
 
-## d = 1 case
-bas1d <- basis_pca(dat, d = 1)
+## d = 1 case & specify facet dim
+bas1d     <- basis_pca(dat, d = 1)
 mt_path1d <- manual_tour(basis = bas1d, manip_var = mv)
-ggt1d <- ggtour(mt_path1d, dat, angle = .3) +
-  proto_default1d(list(fill = clas))
-
-ggt1d <- ggtour(mt_path1d, dat) +
-  proto_default1d(list(fill = clas))
-\dontrun{
-filmstrip(ggt1d)}
+ggt1d <- ggtour(mt_path1d, dat, angle = 10) +
+  proto_default1d(aes_args = list(fill = clas))
+filmstrip(ggt1d, nrow = 12, ncol = 3)
 }
 \seealso{
-Other ggtour proto: 
-\code{\link{ggtour}()},
-\code{\link{proto_basis}()},
-\code{\link{proto_default}()},
-\code{\link{proto_density}()},
-\code{\link{proto_hex}()},
-\code{\link{proto_highlight}()},
-\code{\link{proto_origin}()},
-\code{\link{proto_point}()},
-\code{\link{proto_text}()}
+Other ggtour animator: 
+\code{\link{animate_gganimate}()},
+\code{\link{animate_plotly}()}
 }
-\concept{ggtour proto}
+\concept{ggtour animator}

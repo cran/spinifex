@@ -4,7 +4,13 @@
 \alias{ggtour}
 \title{Prepare a new grammar of graphics tour}
 \usage{
-ggtour(basis_array, data = NULL, angle = 0.05, facet_by = NULL)
+ggtour(
+  basis_array,
+  data = NULL,
+  angle = 0.05,
+  basis_label = NULL,
+  data_label = NULL
+)
 }
 \arguments{
 \item{basis_array}{An array of projection bases for the tour, as produced
@@ -16,8 +22,13 @@ stored as an attribute of the the \code{basis_array}.}
 \item{angle}{Target angle (in radians) for interpolation for
 \code{tour::save_history()} generated \code{basis_array}. Defaults to .05.}
 
-\item{facet_by}{Optionally, add a vector to facet the ggtour on. Similar to
-adding \code{facet_grid(rows = facet_by)} to the tour.}
+\item{basis_label}{Labels for basis display, a character
+vector with length equal to the number of variables.
+Defaults to NULL; 3 character abbreviation from colnames of data or
+rownames of basis.}
+
+\item{data_label}{Labels for \code{plotly} tooltip display.
+Defaults to the NULL, rownames and/or numbers of data.}
 }
 \description{
 \code{ggtour()} initializes a ggplot object for a tour. \verb{proto_*} functions are
@@ -26,54 +37,67 @@ then animated with \code{animate_plotly()} or \code{animate_ggtour()}, or passed
 \code{filmstrip()} for static plot faceting on frames.
 }
 \examples{
-dat <- scale_sd(tourr::flea[, 1:6])
-clas <- tourr::flea$species
-bas <- basis_pca(dat)
-mv <- manip_var_of(bas)
+library(spinifex)
+dat     <- scale_sd(penguins[, 1:4])
+clas    <- penguins$species
+bas     <- basis_pca(dat)
+mv      <- manip_var_of(bas)
 mt_path <- manual_tour(bas, manip_var = mv)
 
-## Returns headless ggplot(), but required for proto_* functions.
-ggtour(mt_path, dat, angle = .15)
-
 ## d = 2 case
-ggt <- ggtour(mt_path, dat) +
-  proto_basis() +
-  proto_point(list(color = clas, shape = clas),
-              list(size = 1.5))
+ggt <- ggtour(basis_array = mt_path, data = dat, angle = .3) +
+  proto_default(aes_args = list(color = clas, shape = clas),
+                identity_args = list(size = 1.5, alpha = .8))
 \dontrun{
-animate_plotly(ggt)}
+animate_plotly(ggt)
+}
+
+## Finer control calling individual proto_* functions
+ggt <- ggtour(basis_array = mt_path, data = dat, angle = .3) +
+  proto_point(aes_args = list(color = clas, shape = clas),
+              identity_args = list(size = 1.5, alpha = .8),
+              row_index = which(clas == levels(clas)[1])) +
+  proto_basis(position = "right",
+              manip_col = "red",
+              text_size = 7L) +
+  proto_origin()
+\dontrun{
+animate_plotly(ggt)
+}
 
 ## d = 1 case
 bas1d <- basis_pca(dat, d = 1)
 mt_path1d <- manual_tour(basis = bas1d, manip_var = mv)
-ggt1d <- ggtour(mt_path1d, dat, angle = .2) +
-  proto_default1d(list(fill = clas))
-\dontrun{
-animate_plotly(ggt1d)}
 
-## d = 2, with facet
-ggt <- ggtour(mt_path, dat, facet_by = clas) +
-  proto_default(list(color = clas, shape = clas), list(size = 1.5))
+ggt1d <- ggtour(basis_array = mt_path1d, data = dat, angle = .3) +
+  proto_default1d(aes_args = list(fill= clas, color = clas))
 \dontrun{
-animate_plotly(ggt)}
+animate_plotly(ggt1d)
+}
 
-## d = 1, with facet
-ggt1d <- ggtour(mt_path1d, dat, facet_by = clas) +
-  proto_default1d(list(color = clas, shape = clas, fill = clas))
-## faceted 1d doesn't work the best with plotly; esp rug, and basis segments.
+## Single basis
+ggt <- ggtour(basis_array = bas, data = dat) +
+  proto_default(aes_args = list(fill= clas, color = clas))
+## ggtour() returns a static ggplot2 plot
 \dontrun{
-animate_gganimate(ggt1d)}
+ggt
+### or as html widget with tooltips
+animate_plotly(ggt)
+}
 }
 \seealso{
-Other ggtour proto: 
-\code{\link{filmstrip}()},
+Other ggtour proto functions: 
+\code{\link{append_fixed_y}()},
+\code{\link{facet_wrap_tour}()},
 \code{\link{proto_basis}()},
 \code{\link{proto_default}()},
+\code{\link{proto_density2d}()},
 \code{\link{proto_density}()},
 \code{\link{proto_hex}()},
 \code{\link{proto_highlight}()},
+\code{\link{proto_hline0}()},
 \code{\link{proto_origin}()},
 \code{\link{proto_point}()},
 \code{\link{proto_text}()}
 }
-\concept{ggtour proto}
+\concept{ggtour proto functions}

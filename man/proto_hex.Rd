@@ -4,18 +4,28 @@
 \alias{proto_hex}
 \title{Tour proto for data, hexagonal heatmap}
 \usage{
-proto_hex(aes_args = list(), identity_args = list(), bins = 30)
+proto_hex(
+  aes_args = list(),
+  identity_args = list(),
+  row_index = NULL,
+  bins = 30
+)
 }
 \arguments{
-\item{aes_args}{A list of aesthetic arguments to passed to
-\verb{geom_point(aes(X)}. Any mapping of the data to an aesthetic,
-for example, \code{geom_point(aes(color = myCol, shape = myCol))} becomes
-\code{aes_args = list(color = myCol, shape = myCol)}.}
+\item{aes_args}{A list of arguments to call inside of aes().
+aesthetic mapping of the primary geom. For example,
+\code{geom_point(aes(color = my_fct, shape = my_fct))} becomes
+\code{aes_args = list(color = my_fct, shape = my_fct)}.}
 
 \item{identity_args}{A list of static, identity arguments passed into
-\code{geom_point()}, but outside of \code{aes()}, for instance
-\code{geom_point(aes(...), size = 2, alpha = .7)} becomes
-\code{identity_args = list(size = 2, alpha = .7)}.}
+the primary geom. For instance,
+\code{geom_point(size = 2, alpha = .7)} becomes
+\code{identity_args = list(size = 2, alpha = .7)}.
+Also passes more foundational arguments such as stat and position, though
+these have been tested less.}
+
+\item{row_index}{A numeric or logical index of rows to subset to.
+Defaults to NULL, all observations.}
 
 \item{bins}{Numeric vector giving number of bins in both vertical and
 horizontal directions. Defaults to 30.}
@@ -25,31 +35,35 @@ Adds \code{geom_hex()} of the projected data. Does not display hexagons in plotl
 animations; will not work with \code{animate_plotly()}.
 }
 \examples{
-raw <- ggplot2::diamonds
-dat <- scale_sd(raw[1:10000, c(1, 5:6, 8:10)])
+library(spinifex)
+raw     <- ggplot2::diamonds
+dat     <- scale_sd(raw[1:10000, c(1, 5:6, 8:10)])
 gt_path <- save_history(dat, grand_tour(), max = 3)
 
 ## 10000 rows is quite heavy to animate.
-## Decrease the points drawn in each frame by aggregating many points into
-#### a hexegon heatmap, using geom_hex!
+## Increase performance by aggregating many points into few hexagons
 ggp <- ggtour(gt_path, dat) +
   proto_basis() +
   proto_hex(bins = 20)
 
 ## Hexagons don't show up in plotly animation.
 \dontrun{
-animate_gganimate(ggp)}
+animate_gganimate(ggp)
+}
 }
 \seealso{
-Other ggtour proto: 
-\code{\link{filmstrip}()},
+Other ggtour proto functions: 
+\code{\link{append_fixed_y}()},
+\code{\link{facet_wrap_tour}()},
 \code{\link{ggtour}()},
 \code{\link{proto_basis}()},
 \code{\link{proto_default}()},
+\code{\link{proto_density2d}()},
 \code{\link{proto_density}()},
 \code{\link{proto_highlight}()},
+\code{\link{proto_hline0}()},
 \code{\link{proto_origin}()},
 \code{\link{proto_point}()},
 \code{\link{proto_text}()}
 }
-\concept{ggtour proto}
+\concept{ggtour proto functions}

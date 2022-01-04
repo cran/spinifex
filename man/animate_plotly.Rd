@@ -14,7 +14,7 @@ A return from \verb{ggtour() + proto_*()}.}
 play at.}
 
 \item{...}{Other arguments passed to
-\code{\link[plotly:layout]{plotly::layout}}.}
+\code{\link[plotly:ggplotly]{plotly::ggplotly}}.}
 }
 \description{
 Animates the static \code{ggtour()} and added \verb{proto_*()} functions as a
@@ -22,30 +22,34 @@ Animates the static \code{ggtour()} and added \verb{proto_*()} functions as a
 the row number.
 }
 \examples{
-dat <- scale_sd(tourr::flea[, 1:6])
-clas <- tourr::flea$species
-bas <- basis_pca(dat)
-mv <- manip_var_of(bas)
+library(spinifex)
+dat     <- scale_sd(penguins[, 1:4])
+clas    <- penguins$species
+bas     <- basis_pca(dat)
+mv      <- manip_var_of(bas)
 mt_path <- manual_tour(bas, manip_var = mv)
 
-ggt <- ggtour(mt_path, dat, angle = .1) +
+ggt <- ggtour(mt_path, dat, angle = .3) +
   proto_origin() +
   proto_basis() +
   proto_point(aes_args = list(color = clas, shape = clas),
               identity_args = list(size = 1.5, alpha = .7))
 \dontrun{
-animate_plotly(ggtour)
+animate_plotly(ggt, width = 700, height = 450) ## pixels only, no resolution argument
 
-## Example saving plotly to a .html widget, may require additional setup.
+## Example saving to a .html widget, may require additional setup.
 if(F){
-  anim <- animate_plotly(ggtour, fps = 10)
-  htmlwidgets::saveWidget(widget = anim, file = "./figures/my_tour.html",
-                          selfcontained = TRUE)}}
+  anim <- animate_plotly(ggt, fps = 10,
+                         width = 700, height = 450) ## in pixels
+  
+  htmlwidgets::saveWidget(widget = anim,
+                          file = "./figures/my_tour.html",
+                          selfcontained = TRUE)}
+}
 }
 \seealso{
-\code{\link[plotly:ggplotly]{plotly::ggplotly}}
-
 Other ggtour animator: 
-\code{\link{animate_gganimate}()}
+\code{\link{animate_gganimate}()},
+\code{\link{filmstrip}()}
 }
 \concept{ggtour animator}

@@ -9,7 +9,7 @@ manual_tour(
   basis,
   manip_var,
   theta = NULL,
-  phi_min = 0L,
+  phi_min = 0,
   phi_max = pi/2,
   data = NULL
 )
@@ -70,3 +70,11 @@ ggt <- ggtour(mt, dat_std, angle = .2) +
 \dontrun{
 animate_plotly(ggt)}
 }
+\seealso{
+Other manual tour adjacent functions: 
+\code{\link{create_manip_space}()},
+\code{\link{interpolate_manual_tour}()},
+\code{\link{manip_var_of}()},
+\code{\link{rotate_manip_space}()}
+}
+\concept{manual tour adjacent functions}

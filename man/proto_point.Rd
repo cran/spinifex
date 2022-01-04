@@ -5,48 +5,74 @@
 \alias{proto_points}
 \title{Tour proto for data point}
 \usage{
-proto_point(aes_args = list(), identity_args = list())
+proto_point(
+  aes_args = list(),
+  identity_args = list(alpha = 0.9),
+  row_index = NULL,
+  bkg_color = "grey80"
+)
 }
 \arguments{
-\item{aes_args}{A list of aesthetic arguments to passed to
-\verb{geom_point(aes(X)}. Any mapping of the data to an aesthetic,
-for example, \code{geom_point(aes(color = myCol, shape = myCol))} becomes
-\code{aes_args = list(color = myCol, shape = myCol)}.}
+\item{aes_args}{A list of arguments to call inside of aes().
+aesthetic mapping of the primary geom. For example,
+\code{geom_point(aes(color = my_fct, shape = my_fct))} becomes
+\code{aes_args = list(color = my_fct, shape = my_fct)}.}
 
 \item{identity_args}{A list of static, identity arguments passed into
-\code{geom_point()}, but outside of \code{aes()}, for instance
-\code{geom_point(aes(...), size = 2, alpha = .7)} becomes
-\code{identity_args = list(size = 2, alpha = .7)}.}
+the primary geom. For instance,
+\code{geom_point(size = 2, alpha = .7)} becomes
+\code{identity_args = list(size = 2, alpha = .7)}.
+Also passes more foundational arguments such as stat and position, though
+these have been tested less.}
+
+\item{row_index}{A numeric or logical index of rows to subset to.
+Defaults to NULL, all observations.}
+
+\item{bkg_color}{The character color by name or hexadecimal to display
+background observations, those not in the \code{row_index}.
+Defaults to "grey80". Use FALSE or NULL to skip rendering background points.
+Other aesthetic values such as shape and alpha are set adopted from
+\code{aes_args} and \code{identity_args}.}
 }
 \description{
 Adds \code{geom_point()} of the projected data.
 }
 \examples{
-dat <- scale_sd(tourr::flea[, 1:6])
-clas <- tourr::flea$species
-gt_path <- tourr::save_history(dat, grand_tour(), max_bases = 5)
+library(spinifex)
+dat     <- scale_sd(penguins[, 1:4])
+clas    <- penguins$species
+gt_path <- save_history(dat, grand_tour(), max_bases = 5)
 
-ggt <- ggtour(gt_path, dat, angle = .1) +
-  proto_point()
+ggt <- ggtour(gt_path, dat, angle = .3) +
+  proto_point(aes_args = list(color = clas, shape = clas),
+              identity_args = list(size = 2, alpha = .7))
 \dontrun{
-animate_plotly(ggt)}
+animate_plotly(ggt)
+}
 
-ggt2 <- ggtour(gt_path, dat) +
-  proto_point(list(color = clas, shape = clas),
-              list(size = 2, alpha = .7))
+## Select/highlight observations with `row_index`
+ggt <- ggtour(gt_path, dat, angle = .3) +
+  proto_point(aes_args = list(color = clas, shape = clas),
+              identity_args = list(size = 2, alpha = .7),
+              row_index = which(clas == levels(clas)[1]),
+              bkg_color = "grey80") ## FALSE or NULL to skip plotting background
 \dontrun{
-animate_plotly(ggt2)}
+animate_plotly(ggt)
+}
 }
 \seealso{
-Other ggtour proto: 
-\code{\link{filmstrip}()},
+Other ggtour proto functions: 
+\code{\link{append_fixed_y}()},
+\code{\link{facet_wrap_tour}()},
 \code{\link{ggtour}()},
 \code{\link{proto_basis}()},
 \code{\link{proto_default}()},
+\code{\link{proto_density2d}()},
 \code{\link{proto_density}()},
 \code{\link{proto_hex}()},
 \code{\link{proto_highlight}()},
+\code{\link{proto_hline0}()},
 \code{\link{proto_origin}()},
 \code{\link{proto_text}()}
 }
-\concept{ggtour proto}
+\concept{ggtour proto functions}

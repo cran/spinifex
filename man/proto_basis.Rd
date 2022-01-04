@@ -6,23 +6,24 @@
 \title{Tour proto for a 2D and 1D basis axes respectively}
 \usage{
 proto_basis(
-  position = c("left", "center", "right", "bottomleft", "topright", "off"),
+  position = c("left", "center", "right", "bottomleft", "topright", "full", "off"),
   manip_col = "blue",
   line_size = 1,
   text_size = 5
 )
 
 proto_basis1d(
-  position = c("top1d", "floor1d", "off"),
+  position = c("bottom1d", "floor1d", "top1d", "full", "off"),
   manip_col = "blue",
   segment_size = 2,
   text_size = 5
 )
 }
 \arguments{
-\item{position}{The position, to place the basis axes relative to the centered
-data. Expects one of c("left", "center", "right", "bottomleft", "topright",
-"off"), defaults to "left".}
+\item{position}{The position, to place the basis axes relative to the
+data. \code{proto_basis} expects one of c("left", "center", "right", "bottomleft", "topright",
+"off"), defaults to "left". \code{proto_basis1d} expects one of
+c("bottom1d", "floor1d", "top1d", "off"). Defaults to "bottom1d".}
 
 \item{manip_col}{The color to highlight the manipulation variable with. Not
 applied if the tour isn't a manual tour. Defaults to "blue".}
@@ -41,57 +42,65 @@ contributions of the variables to the projection space inscribed in a unit
 circle for 2D or rectangle of unit width for 1D.
 }
 \examples{
-dat <- scale_sd(tourr::flea[, 1:6])
-clas <- tourr::flea$species
-bas <- basis_pca(dat)
-mv <- manip_var_of(bas)
+library(spinifex)
+dat  <- scale_sd(penguins[, 1:4])
+clas <- penguins$species
+bas  <- basis_pca(dat)
+mv   <- manip_var_of(bas)
 
 ## 2D case:
 mt_path <- manual_tour(bas, manip_var = mv)
-
-ggt <- ggtour(mt_path, dat, angle = .2) +
+ggt <- ggtour(mt_path, dat, angle = .3) +
+  proto_point() +
   proto_basis()
 \dontrun{
-animate_plotly(ggt)}
+animate_plotly(ggt)
+}
 
 ## Customize basis
 ggt2 <- ggtour(mt_path, dat) +
   proto_basis(position = "right", manip_col = "green",
               line_size = .8, text_size = 8)
 \dontrun{
-animate_plotly(ggt2)}
+animate_plotly(ggt2)
+}
 
 ## 1D case:
-bas1d <- basis_pca(dat, d = 1)
-mv <- manip_var_of(bas, 3)
+bas1d     <- basis_pca(dat, d = 1)
+mv        <- manip_var_of(bas, 3)
 mt_path1d <- manual_tour(bas1d, manip_var = mv)
 
-ggt1d <- ggtour(mt_path1d, dat, angle = .2) +
+ggt1d <- ggtour(mt_path1d, dat, angle = .3) +
+  proto_density() +
   proto_basis1d()
 \dontrun{
-animate_plotly(ggt1d)}
+animate_plotly(ggt1d)
+}
+
+## Customized basis1d
+ggt1d <- ggtour(mt_path1d, dat, angle = .3) +
+  proto_density() +
+  proto_basis1d(position = "bottom",
+                manip_col = "pink",
+                segment_size = 3,
+                text_size = 5)
+\dontrun{
+animate_plotly(ggt1d)
+}
 }
 \seealso{
-Other ggtour proto: 
-\code{\link{filmstrip}()},
+Other ggtour proto functions: 
+\code{\link{append_fixed_y}()},
+\code{\link{facet_wrap_tour}()},
 \code{\link{ggtour}()},
 \code{\link{proto_default}()},
+\code{\link{proto_density2d}()},
 \code{\link{proto_density}()},
 \code{\link{proto_hex}()},
 \code{\link{proto_highlight}()},
-\code{\link{proto_origin}()},
-\code{\link{proto_point}()},
-\code{\link{proto_text}()}
-
-Other ggtour proto: 
-\code{\link{filmstrip}()},
-\code{\link{ggtour}()},
-\code{\link{proto_default}()},
-\code{\link{proto_density}()},
-\code{\link{proto_hex}()},
-\code{\link{proto_highlight}()},
+\code{\link{proto_hline0}()},
 \code{\link{proto_origin}()},
 \code{\link{proto_point}()},
 \code{\link{proto_text}()}
 }
-\concept{ggtour proto}
+\concept{ggtour proto functions}

@@ -2,17 +2,15 @@
 % Please edit documentation in R/0_util.r
 \name{is_orthonormal}
 \alias{is_orthonormal}
-\title{Test if a numeric matrix is orthonormal, that is, each column is orthogonal,
-at a right angle with the others, and each column has a norm
-length of 1. This must be true for a projection to be linear.}
+\title{Orthonormality of a matrix}
 \usage{
 is_orthonormal(x, tol = 0.001)
 }
 \arguments{
 \item{x}{Numeric matrix to test the orthonormality of.}
 
-\item{tol}{Max tolerance of floating point differences.
-Element-wise distance of t(x) \%*\% x from the identity matrix.}
+\item{tol}{Max tolerance of floating point differences of the
+element-wise distance of t(x) \%*\% x from the identity matrix.}
 }
 \value{
 Single logical, whether or not the matrix is orthonormal.

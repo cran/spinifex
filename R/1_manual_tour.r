@@ -17,6 +17,7 @@
 #' manipulate the projection in.
 #' @import tourr
 #' @export
+#' @family manual tour adjacent functions
 #' @examples
 #' ## Setup
 #' dat_std <- scale_sd(wine[, 2:6])
@@ -55,7 +56,7 @@ create_manip_space <- function(basis, manip_var = manip_var_of(basis)){
   if(is.null(rn) == TRUE)
     rn <- 1L:nrow(basis)
   rownames(manip_space) <- rn
-  return(manip_space)
+  manip_space
 }
 
 
@@ -76,6 +77,7 @@ create_manip_space <- function(basis, manip_var = manip_var_of(basis)){
 #' The first 2 columns are x and y in the projection plane. The 3rd column
 #' extends "in the z-direction" orthogonal to the projection plane.
 #' @export
+#' @family manual tour adjacent functions
 #' @examples
 #' ## Setup
 #' dat_std <- scale_sd(wine[, 2:6])
@@ -137,7 +139,7 @@ rotate_manip_space <- function(manip_space, theta, phi) {
     cn <- c(paste0("y", 1L:(ncol(manip_space) - 1L)), "manip_sp")
   colnames(rotated_space) <- cn
   
-  return(rotated_space)
+  rotated_space
 }
 
 
@@ -167,6 +169,7 @@ rotate_manip_space <- function(manip_space, theta, phi) {
 #' @return A (p, d, 4) history_array of the radial tour. The bases set for
 #' phi_start, `phi_min`, `phi_max`, and back to phi_start.
 #' @export
+#' @family manual tour adjacent functions
 #' @examples
 #' ## Setup
 #' dat_std <- scale_sd(wine[, 2:6])
@@ -195,7 +198,7 @@ rotate_manip_space <- function(manip_space, theta, phi) {
 manual_tour <- function(basis,
                         manip_var,
                         theta   = NULL,
-                        phi_min = 0L,
+                        phi_min = 0,
                         phi_max = pi / 2,
                         data = NULL
 ){
@@ -203,8 +206,10 @@ manual_tour <- function(basis,
   basis <- as.matrix(basis)
   p <- nrow(basis)
   d <- ncol(basis)
-  if(length(manip_var) != 1L | manip_var < 1L | manip_var > p)
-    stop("manip_var expected as a single integer between 1 and nrow(basis).")
+  if(length(manip_var) != 1L)
+    stop(paste0("manip_var expected with length 1, was ", length(manip_var), "."))
+  if(manip_var < 1L | manip_var > p)
+    stop("manip_var expected to be between 1 and nrow(basis).")
   if(spinifex::is_orthonormal(basis) == FALSE){
     warning("Basis was not orthonormal. Coereced to othronormal with tourr::orthonormalise(basis).")
     basis <- tourr::orthonormalise(basis)
@@ -223,22 +228,27 @@ manual_tour <- function(basis,
     theta <- NA
   }
   
+  if(is.na(theta) == FALSE)
+    if(theta < 0L)
+      devMessage("theta is negative")
+  if(phi_start < 0L)
+    devMessage("phi_start is negative")
+  
   ### Shift phi start in be in-phase between [-pi/2, pi/2]
-  ## Are these needed still?? for precaution
   if(phi_start > pi / 2L){
-    message("phi_start > pi / 2; phi_start <- phi_start - pi & phi_max <- -phi_max")
+    devMessage("phi_start > pi / 2; phi_start <- phi_start - pi & phi_max <- -phi_max")
     phi_start <- phi_start - pi
-    phi_max   <- phi_max - pi
+    # phi_max   <- phi_max - pi ## being removed didn't effect 4 cases.
   }
   if(phi_start < -pi / 2L){
-    message("phi_start < -pi / 2; phi_start <- phi_start + pi")
+    devMessage("phi_start < -pi / 2; phi_start <- phi_start + pi")
     phi_start <- phi_start + pi
   }
   ## Ensure correct order of phi_min, phi_start, phi_max
-  if((abs(phi_min) < abs(phi_start)) == FALSE)
-    stop("Phi is less than phi_min, please set phi_min below ", round(phi_start, 2L))
-  if((abs(phi_max) > abs(phi_start)) == FALSE)
-    stop("Phi is greather than phi_max, please set phi_max above ", round(phi_start, 2L))
+  if((phi_min < abs(phi_start)) == FALSE)
+    message("Phi is less than phi_min, please set phi_start above ", round(phi_min, 2L))
+  if((phi_max > abs(phi_start)) == FALSE)
+    message("Phi is greater than phi_max, please set phi_start below ", round(phi_max, 2L))
   
   ## single basis array, desirable downstream
   .dn <- dimnames(basis)
@@ -250,7 +260,7 @@ manual_tour <- function(basis,
   attr(basis_array, "phi_min")   <- phi_min
   attr(basis_array, "phi_max")   <- phi_max
   attr(basis_array, "data")      <- data ## Can be NULL
-  return(basis_array)
+  basis_array
 }
 
 
@@ -262,7 +272,7 @@ manual_tour <- function(basis,
 #'
 #' @param basis_array array, of the target bases, the extrema of the walk/segments.
 #' @param angle The step size between interpolated frames, in radians.
-#' @family Internal utility
+#' @family manual tour adjacent functions
 #' @examples
 #' ## This function is not meant for external use
 #' dat_std <- scale_sd(wine[, 2:6])
@@ -283,31 +293,33 @@ interpolate_manual_tour <- function(basis_array, angle = .05){
   phi_max   <- attr(basis_array, "phi_max") ## NULL if coloring 1 basis w/o tour
   p <- nrow(basis_array)
   d <- ncol(basis_array)
+  
   ## Early out for single frames,
-  #### Only when phi_min | phi_max is NULL
   if(is.null(phi_min) | is.null(phi_max)){
     dn <- dimnames(basis_array)[1L:2L]
     dat <- attr(basis_array, "data")
     basis_array <- array(basis_array, dim = c(dim(basis_array), 1L),
                          dimnames = c(dn, list("frame1")))
     attr(basis_array, "data") <- dat
-    return(basis_array)
+    basis_array
   }
   
   ## if mv_x <0, phi_start <- pi/2 - phi_start
   is_mv_x_neg <- basis_array[manip_var, 1L, 1L] <= 0L
-  if(is_mv_x_neg == TRUE)
-    phi_start <- pi / 2L - phi_start
+  if(is_mv_x_neg == TRUE){
+    devMessage("manual_tour: is_mv_x_neg == TRUE; phi_start <- pi / 2L - abs(phi_start); phi_path <- rev(phi_path)")
+    phi_start <- pi / 2L - abs(phi_start)
+  }
   phi_delta <- function(start, end){
     .start <- -(start - phi_start)
     .end   <- -(end - phi_start)
     .by    <- ifelse(.end > .start, 1L, -1L) * angle
-    .seq <- seq(from = .start, to = .end, by = .by)
+    .seq   <- seq(from = .start, to = .end, by = .by)
     ## If remainder is >= 30% of a full step, add it
     if(abs(.end - .seq[length(.seq)]) / .by >= .3)
       .seq <- c(.seq, .end)
     ## Sequence of phi values for this segment of the walk.
-    return(.seq)
+    .seq
   }
   ## Find the phi values for the animation frames
   phi_path <- c(phi_delta(start = phi_start, end = phi_min),
@@ -334,6 +346,6 @@ interpolate_manual_tour <- function(basis_array, angle = .05){
   
   ## Return
   attr(interp_array, "data") <- attr(basis_array, "data")
-  return(interp_array)
+  interp_array
 }
 

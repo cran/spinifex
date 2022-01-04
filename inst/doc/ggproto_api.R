@@ -53,13 +53,13 @@ library("tourr")
 library("spinifex")
 
 ## Scale our numeric data
-dat <- scale_sd(tourr::flea[, 1:6])
+dat  <- scale_sd(penguins[, 1:4])
 ## Use species as a class to set color and shape with
-clas <- tourr::flea$species
+clas <- penguins$species
 
 ## Manual tour, manipulating the contribution of a selected variable 
-bas <- basis_pca(dat) ## Start basis
-mv <- manip_var_of(bas) ## Number of the variable to manipulate
+bas     <- basis_pca(dat)    ## Start basis
+mv      <- manip_var_of(bas) ## Number of the variable to manipulate
 mt_path <- manual_tour(bas, manip_var = mv) ## Tour path
 
 ## Create a static ggplot2 plot with all frames of the tour
@@ -74,10 +74,8 @@ ggt <- ggtour(mt_path, dat, angle = .1) +
 #  #animate_gganimate(ggt, fps = 8, rewind = TRUE) ## As a gganimate .gif
 
 ## -----------------------------------------------------------------------------
-## (Quietly create) a grand tour, projecting through randomly selected bases
-.mute <- utils::capture.output(
-  gt_path <- tourr::save_history(dat, grand_tour(), max_bases = 3)
-)
+## Save a grand tour basis path, projecting through randomly selected bases
+gt_path <- save_history(dat, grand_tour(), max_bases = 3)
 
 ## Static ggplot of all frames in the tour
 ggt <- ggtour(gt_path, dat, angle = .1) + ## Include geodesic interpolation angle between the selected bases.
@@ -96,8 +94,7 @@ guided_path <- save_history(dat, guided_tour(holes(), d = 1))
 ## Static ggplot of all frames in the tour
 ggt <- ggtour(guided_path, dat, angle = .1) + ## Include geodesic interpolation angle between the selected bases.
   proto_basis1d() +
-  proto_density(list(fill = clas), density_position = "stack")
-## Note that proto_density(density_position = "stack") does not work with animate_plotly().
+  proto_density(list(fill = clas), rug_shape = 124L)
 
 ## ---- eval=FALSE--------------------------------------------------------------
 #  ## Animate
@@ -111,6 +108,20 @@ ggt <- ggt +
 
 ## ---- eval=FALSE--------------------------------------------------------------
 #  animate_gganimate(ggt)
+
+## -----------------------------------------------------------------------------
+dat     <- scale_sd(PimaIndiansDiabetes_wide[, -9])
+clas    <- PimaIndiansDiabetes_wide$diabetes
+gt_path <- save_history(dat, max = 10)
+
+ggt <- ggtour(gt_path, dat, angle = .15) +
+  facet_wrap_tour(facet_var = clas, nrow = 1) +
+  proto_point(list(color = clas, shape = clas)) +
+  proto_basis(position = "center") +
+  proto_origin()
+
+## ---- eval=FALSE--------------------------------------------------------------
+#  animate_plotly(ggt)
 
 ## ---- echo = FALSE------------------------------------------------------------
 data.frame(

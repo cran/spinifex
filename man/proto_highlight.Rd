@@ -7,100 +7,97 @@
 \title{Tour proto highlighing specified points}
 \usage{
 proto_highlight(
-  rownum_index,
   aes_args = list(),
   identity_args = list(color = "red", size = 5, shape = 8),
-  mark_initial = if (length(rownum_index) == 1) TRUE else FALSE
+  row_index = 1,
+  mark_initial = FALSE
 )
 
 proto_highlight1d(
-  rownum_index,
   aes_args = list(),
   identity_args = list(color = "red", linetype = 2, alpha = 0.9),
-  mark_initial = if (length(rownum_index) == 1) TRUE else FALSE
+  row_index = 1,
+  mark_initial = FALSE
 )
 }
 \arguments{
-\item{rownum_index}{One or more integers, the row numbers of the to
-highlight. Should be within 1:n, the rows of the original data.}
-
-\item{aes_args}{A list of aesthetic arguments to passed to
-\verb{geom_point(aes(X)}. Any mapping of the data to an aesthetic,
-for example, \code{geom_point(aes(color = myCol, shape = myCol))} becomes
-\code{aes_args = list(color = myCol, shape = myCol)}.}
+\item{aes_args}{A list of arguments to call inside of aes().
+aesthetic mapping of the primary geom. For example,
+\code{geom_point(aes(color = my_fct, shape = my_fct))} becomes
+\code{aes_args = list(color = my_fct, shape = my_fct)}.}
 
 \item{identity_args}{A list of static, identity arguments passed into
 \code{geom_point()}, but outside of \code{aes()}, for instance
 \code{geom_point(aes(...), size = 2, alpha = .7)} becomes
 \code{identity_args = list(size = 2, alpha = .7)}.
-Typically a single numeric for point size, alpha, or similar.}
+#' Typically a single numeric for point size, alpha, or similar.}
+
+\item{row_index}{A numeric or logical index of rows to subset to.
+Defaults to 1, highlighting the first row.}
 
 \item{mark_initial}{Logical, whether or not to leave a fainter mark at the
-subset's initial position. By default: TRUE if single row number given else
-FALSE.}
+subset's initial position. Defaults to FALSE.}
 }
 \description{
-A \code{geom_point} or \code{geom_segment}(*1d) call to draw attention to a subset of
-points. Subset the projected data frames to the specified \code{rownum_index} of
-the original data.frame with specified highlighting aesthetics. The order you
-apply highlighting is import when using with other \verb{proto_*} functions.
+A \code{geom_point} or \code{geom_segment}(1d case) call to draw attention to a subset
+of points. This is mostly redundant \code{proto_point} with the implementation
+of the \code{row_index} argument on data protos, still helpful in the 1d case and
+for \code{mark_initial}, does not use bkg_row_color
 }
 \examples{
-dat <- scale_sd(tourr::flea[, 1:6])
-clas <- tourr::flea$species
-gt_path <- tourr::save_history(dat, grand_tour(), max_bases = 5)
+library(spinifex)
+dat     <- scale_sd(penguins[, 1:4])
+clas    <- penguins$species
+gt_path <- save_history(dat, grand_tour(), max_bases = 5)
 
-## d = 2 case, Highlighting 1 obs defaults mark_initial to TRUE.
-ggt <- ggtour(gt_path, dat) +
-  proto_highlight(rownum_index = 5) +
-  proto_point()
+## d = 2 case
+ggt <- ggtour(gt_path, dat, angle = .3) +
+  proto_default(aes_args = list(color = clas, shape = clas)) +
+  proto_highlight(row_index = 5)
 \dontrun{
-animate_plotly(ggt)}
+animate_plotly(ggt)
+}
 
-## Custom aesthetics. Highlighting multiple points defaults mark_initial to FALSE
-ggt2 <- ggtour(gt_path, dat) +
-  proto_highlight(rownum_index = c( 2, 6, 19),
-                  identity_args = list(color = "blue", size = 4, shape = 2)) +
-  proto_point(list(color = clas, shape = clas),
-              list(size = 2, alpha = .7))
+## Highlight multiple observations
+ggt2 <- ggtour(gt_path, dat, angle = .3) +
+  proto_default(aes_args = list(color = clas, shape = clas)) +
+  proto_highlight(row_index = c( 2, 6, 19),
+                  identity_args = list(color = "blue", size = 4, shape = 4))
 \dontrun{
-animate_plotly(ggt2)}
+animate_plotly(ggt2)
+}
 ## 1D case:
-gt_path <- tourr::save_history(dat, grand_tour(d = 1), max_bases = 3)
+gt_path1d <- save_history(dat, grand_tour(d = 1), max_bases = 3)
 
-ggt <- ggtour(gt_path, dat) +
-  proto_default1d(list(fill = clas, color = clas)) +
-  proto_highlight1d(rownum_index = 7)
+ggt <- ggtour(gt_path1d, dat, angle = .3) +
+  proto_default1d(aes_args = list(fill = clas, color = clas)) +
+  proto_highlight1d(row_index = 7)
 \dontrun{
-animate_plotly(ggt)}
+animate_plotly(ggt)
+}
 
-ggt2 <- ggtour(gt_path, dat) +
-  proto_default1d(list(fill = clas, color = clas)) +
-  proto_highlight1d(rownum_index = c(2, 6, 7))
+## Highlight multiple observations, mark_initial defaults to off
+ggt2 <- ggtour(gt_path1d, dat, angle = .3) +
+  proto_default1d(aes_args = list(fill = clas, color = clas)) +
+  proto_highlight1d(row_index = c(2, 6, 7),
+                    identity_args = list(color = "green", linetype = 1))
 \dontrun{
-animate_plotly(ggt2)}
+animate_plotly(ggt2)
+}
 }
 \seealso{
-Other ggtour proto: 
-\code{\link{filmstrip}()},
+Other ggtour proto functions: 
+\code{\link{append_fixed_y}()},
+\code{\link{facet_wrap_tour}()},
 \code{\link{ggtour}()},
 \code{\link{proto_basis}()},
 \code{\link{proto_default}()},
+\code{\link{proto_density2d}()},
 \code{\link{proto_density}()},
 \code{\link{proto_hex}()},
-\code{\link{proto_origin}()},
-\code{\link{proto_point}()},
-\code{\link{proto_text}()}
-
-Other ggtour proto: 
-\code{\link{filmstrip}()},
-\code{\link{ggtour}()},
-\code{\link{proto_basis}()},
-\code{\link{proto_default}()},
-\code{\link{proto_density}()},
-\code{\link{proto_hex}()},
+\code{\link{proto_hline0}()},
 \code{\link{proto_origin}()},
 \code{\link{proto_point}()},
 \code{\link{proto_text}()}
 }
-\concept{ggtour proto}
+\concept{ggtour proto functions}

@@ -6,8 +6,8 @@
 \usage{
 map_relative(
   x,
-  position = c("center", "left", "top1d", "floor1d", "right", "bottomleft", "topright",
-    "off"),
+  position = c("center", "left", "right", "bottomleft", "topright", "full", "off",
+    "top1d", "floor1d", "bottom1d"),
   to = NULL
 )
 }
@@ -16,10 +16,10 @@ map_relative(
 the \code{to} object.}
 
 \item{position}{Text specifying the position the axes should go to.
-Defaults to "center" expects one of: "center", "left", "right",
-"bottomleft", "topright", or "off".}
+Defaults to "center" expects one of: c("center", "left", "right",
+"bottomleft", "topright", "full", "off", "top1d", "floor1d", "bottom1d").}
 
-\item{to}{Table to appropriately set the size and position of the axes to.
+\item{to}{Data.frame to scale to.
 Based on the min/max of the first 2 columns. If left NULL defaults to
 data.frame(x = c(-1L, 1L), y = c(-1L, 1L).}
 }
@@ -40,7 +40,7 @@ map_relative(x = rb, position = "right", to = wine[, 2:3])
 \seealso{
 \code{\link{map_absolute}} for more manual control.
 
-Other Linear mapping: 
+Other linear mapping functions: 
 \code{\link{map_absolute}()}
 }
-\concept{Linear mapping}
+\concept{linear mapping functions}

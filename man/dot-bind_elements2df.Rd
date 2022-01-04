@@ -14,7 +14,7 @@
 }
 \description{
 Internal function. To be applied to \code{aes_args}
-replicates elements to length data
+replicates elements to the length of the data and bind as a column.
 }
 \examples{
 ## This function is not meant for external use
@@ -22,7 +22,6 @@ replicates elements to length data
 \seealso{
 Other Internal utility: 
 \code{\link{.init4proto}},
-\code{\link{.lapply_rep_len}()},
-\code{\link{interpolate_manual_tour}()}
+\code{\link{.lapply_rep_len}()}
 }
 \concept{Internal utility}
