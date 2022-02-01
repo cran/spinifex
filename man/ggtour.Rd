@@ -9,7 +9,8 @@ ggtour(
   data = NULL,
   angle = 0.05,
   basis_label = NULL,
-  data_label = NULL
+  data_label = NULL,
+  do_center_frame = TRUE
 )
 }
 \arguments{
@@ -19,8 +20,9 @@ with \code{manual_tour()} or \code{tour::save_history()}, or a single basis.}
 \item{data}{Numeric data to project. If left NULL, will check if it data is
 stored as an attribute of the the \code{basis_array}.}
 
-\item{angle}{Target angle (in radians) for interpolation for
-\code{tour::save_history()} generated \code{basis_array}. Defaults to .05.}
+\item{angle}{Target angle (radians) for interpolation frames between
+frames of the \code{basis_array}. Defaults to .05.
+To opt out of interpolation set to NA or 0.}
 
 \item{basis_label}{Labels for basis display, a character
 vector with length equal to the number of variables.
@@ -29,6 +31,9 @@ rownames of basis.}
 
 \item{data_label}{Labels for \code{plotly} tooltip display.
 Defaults to the NULL, rownames and/or numbers of data.}
+
+\item{do_center_frame}{Whether or not to center the mean within each
+animation frame. Defaults to TRUE.}
 }
 \description{
 \code{ggtour()} initializes a ggplot object for a tour. \verb{proto_*} functions are
@@ -38,8 +43,8 @@ then animated with \code{animate_plotly()} or \code{animate_ggtour()}, or passed
 }
 \examples{
 library(spinifex)
-dat     <- scale_sd(penguins[, 1:4])
-clas    <- penguins$species
+dat     <- scale_sd(penguins_na.rm[, 1:4])
+clas    <- penguins_na.rm$species
 bas     <- basis_pca(dat)
 mv      <- manip_var_of(bas)
 mt_path <- manual_tour(bas, manip_var = mv)

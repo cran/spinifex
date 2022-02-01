@@ -31,8 +31,9 @@ Returns a list of proto_origin(), proto_point(...), proto_basis() for 2D.
 Returns a list of proto_origin1d(), proto_density(...), proto_basis1d() for 1D.
 }
 \examples{
-dat  <- scale_sd(penguins[, 1:4])
-clas <- penguins$species
+library(spinifex)
+dat  <- scale_sd(penguins_na.rm[, 1:4])
+clas <- penguins_na.rm$species
 
 ## 2D case:
 bas     <- basis_pca(dat)

@@ -8,7 +8,8 @@ array2df(
   basis_array,
   data = NULL,
   basis_label = NULL,
-  data_label = rownames(data)
+  data_label = rownames(data),
+  do_center_frame = TRUE
 )
 }
 \arguments{
@@ -25,6 +26,9 @@ rownames of basis.}
 
 \item{data_label}{Labels for \code{plotly} tooltip display.
 Defaults to the rownames of data. If null, initializes to 1:nrow(data).}
+
+\item{do_center_frame}{Whether or not to center the mean within each
+animation frame. Defaults to TRUE.}
 }
 \description{
 Internal function, many end users will not need this. Takes the result of
@@ -40,8 +44,8 @@ mv <- manip_var_of(bas)
 
 ## Radial tour array to long df, as used in play_manual_tour()
 mt_array <- manual_tour(basis = bas, manip_var = mv)
-ls_df_frames <- array2df(basis_array = mt_array, data = dat_std)#,
-                         #basis_label = paste0("MyLabs", 1:nrow(bas)))
+ls_df_frames <- array2df(basis_array = mt_array, data = dat_std,
+                         basis_label = paste0("MyLabs", 1:nrow(bas)))
 str(ls_df_frames)
 
 ## tourr::save_history tour array to long df, as used in play_tour_path()

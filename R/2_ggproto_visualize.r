@@ -10,20 +10,23 @@
 #' with `manual_tour()` or `tour::save_history()`, or a single basis.
 #' @param data Numeric data to project. If left NULL, will check if it data is 
 #' stored as an attribute of the the `basis_array`.
-#' @param angle Target angle (in radians) for interpolation for
-#' `tour::save_history()` generated `basis_array`. Defaults to .05.
+#' @param angle Target angle (radians) for interpolation frames between 
+#' frames of the `basis_array`. Defaults to .05. 
+#' To opt out of interpolation set to NA or 0.
 #' @param basis_label Labels for basis display, a character 
 #' vector with length equal to the number of variables.
 #' Defaults to NULL; 3 character abbreviation from colnames of data or
 #' rownames of basis.
+#' @param do_center_frame Whether or not to center the mean within each 
+#' animation frame. Defaults to TRUE.
 #' @param data_label Labels for `plotly` tooltip display. 
 #' Defaults to the NULL, rownames and/or numbers of data.
 #' @export
 #' @family ggtour proto functions
 #' @examples
 #' library(spinifex)
-#' dat     <- scale_sd(penguins[, 1:4])
-#' clas    <- penguins$species
+#' dat     <- scale_sd(penguins_na.rm[, 1:4])
+#' clas    <- penguins_na.rm$species
 #' bas     <- basis_pca(dat)
 #' mv      <- manip_var_of(bas)
 #' mt_path <- manual_tour(bas, manip_var = mv)
@@ -68,71 +71,69 @@
 #' ### or as html widget with tooltips
 #' animate_plotly(ggt)
 #' }
-ggtour <- function(basis_array,
-                   data = NULL,
-                   angle = .05,
-                   basis_label = NULL,
-                   data_label  = NULL
+ggtour <- function(
+  basis_array,
+  data            = NULL,
+  angle           = .05,
+  basis_label     = NULL,
+  data_label      = NULL,
+  do_center_frame = TRUE
 ){
   ## If data missing, check if data is passed to the basis_array
   if(is.null(data)) data <- attr(basis_array, "data") ## Could be NULL
   .phi_start <- attr(basis_array,"phi_start")  ## NULL if not a manual tour
-  .manip_var <- attr(basis_array, "manip_var")
-  .map_to_data <- data.frame(x = 0L:1L, y = 0L:1L) ## Init for null data
-  ## Basis label, handling
+  .manip_var <- attr(basis_array, "manip_var") ## For highlighting indepentant of 
+  ## Basis label condition handling
   if(is.null(basis_label)){
     if(is.null(data) == FALSE){
       basis_label <- abbreviate(colnames(data), 3L)
     }else basis_label <- abbreviate(rownames(basis_array), 3L)
     if(length(basis_label) == 0L) basis_label <- paste0("v", 1L:nrow(basis_array))
   }
-  ## Data label handling
+  ## Data label condition handling
   if(is.null(data) == FALSE &
      suppressWarnings(any(is.na(as.numeric(as.character(rownames(data)))))))
     data_label <- paste0("row: ", 1L:nrow(data), ", ", rownames(data))
-  
-  ## Single basis, coerce to array.
+  ## Single basis matrix, coerce to array
   if(length(dim(basis_array)) == 2L) ## AND 1 basis.
     basis_array <- array(
       as.matrix(basis_array), dim = c(dim(basis_array), 1L))
-  ## Interpolate {tourr} tours
-  if(is.null(.phi_start)) ## if manip_var is null; IE. from tourr
+  # Interpolation frames
+  if(is.null(angle) | is.na(angle) | angle == 0L){
+    ## Opt out of interpolate, angle was na, null, or 0, esp for 
+    .interpolated_basis_array <- basis_array
+  }else if(is.null(.phi_start) == FALSE){
+    ## manual tours
+    .interpolated_basis_array <- interpolate_manual_tour(basis_array, angle)
+  }else if(is.null(.phi_start)){ ## if manip_var is null; IE. from tourr
+    ## tourr tours
     .m <- utils::capture.output(
       .interpolated_basis_array <- tourr::interpolate(basis_array, angle))
-  ## Interpolate manual tours
-  if(is.null(.phi_start) == FALSE)
-    ## Basis_array from manual tours is only 1 basis.
-    .interpolated_basis_array <- interpolate_manual_tour(basis_array, angle)
-  ## list of: df_basis & df_data
-  df_ls <- array2df(.interpolated_basis_array, data, basis_label, data_label)
-  .df_basis <- df_ls$basis_frames
+  }
+  
+  ## df_basis & df_data list
+  .df_ls <- array2df(
+    .interpolated_basis_array, data, basis_label, data_label, do_center_frame)
+  .df_basis <- .df_ls$basis_frames
   attr(.df_basis, "manip_var") <- .manip_var ## NULL if not a manual tour
   .n_frames <- dim(.interpolated_basis_array)[3L]# + 1L ## Duplicate first frame
   .d <- ncol(.interpolated_basis_array)
   .p <- nrow(.interpolated_basis_array)
-  ## .df_data related
-  .df_data <- df_ls$data_frames ## Can be NULL
-  if(is.null(.df_data) == FALSE){
-    .map_to_data <- data.frame(x = range(.df_data$x),
-                               y = c(0L, 1L)) ## init dummy y for just map_to
-    if(ncol(.interpolated_basis_array) > 1L){
-      ## Raise data y so density floor isn't the middle.
-      .df_data$y <- .df_data$y - min(.df_data$y)
-      ## If 2D map data to density shape
-      .map_to_data$y <- range(.df_data$y)
-    }
-  }
+  .map_to <- data.frame(x = c(0L, 1L), y = c(0L, 1L))
+  .df_data <- .df_ls$data_frames ## Can be NULL
   .nrow_df_data <- nrow(.df_data) ## NULL if data is NULL
   .n <- nrow(data) ## NULL if data is NULL
-  ## SIDE EFFECT: Assign list to last_ggtour().
-  .set_last_ggtour(list(
-    interpolated_basis_array = .interpolated_basis_array,
-    df_basis = .df_basis, df_data = .df_data, map_to_data = .map_to_data,
-    n_frames = .n_frames, nrow_df_data = .nrow_df_data, n = .n, p = .p, 
-    d = .d, manip_var = .manip_var, is_faceted = FALSE))
   
+  ## SIDE EFFECT: Assign list to last_ggtour_env().
+  .set_last_ggtour_env(list(
+    interpolated_basis_array = .interpolated_basis_array,
+    df_basis = .df_basis, df_data = .df_data, map_to = .map_to,
+    n_frames = .n_frames, nrow_df_data = .nrow_df_data, n = .n, p = .p,
+    d = .d, manip_var = .manip_var, is_faceted = FALSE))
   ## Return ggplot head, theme, and facet if used
-  ggplot2::ggplot(.df_basis) + spinifex::theme_spinifex()
+  ggplot2::ggplot(.df_basis) + theme_spinifex() +
+    ggplot2::labs(x = NULL, y = NULL, color = NULL, shape = NULL, fill = NULL) +
+    ggplot2::coord_fixed(clip = "off") ## aspect.ratio = 1L fixes unit size, not axes size
 }
 ## Print method for ggtours ?? using proto_default()
 #### Was a good idea, but ggplot stops working when you change the first class, 
@@ -147,17 +148,17 @@ ggtour <- function(basis_array,
 #' `plotly` may not display well with with faceting.
 #' 
 #' @param facet_var Expects a single variable to facet the levels of. 
-#' Should be a vector not formula, `~cyl`, or `ggplot2::vars()` call.
+#' Should be a vector, not a formula (`~cyl`) or `ggplot2::vars()` call.
 #' @param nrow Number of rows. Defaults to NULL; set by display dim.
 #' @param ncol Number of columns. Defaults to NULL; set by display dim.
 #' @param dir Direction of wrapping: either "h" horizontal by rows, 
-#' or "v", for vertical by columns. Defaults to "h"
+#' or "v", for vertical by columns. Defaults to "h".
 #' @export
 #' @family ggtour proto functions
 #' @examples
 #' library(spinifex)
-#' dat     <- scale_sd(penguins[, 1:4])
-#' clas    <- penguins$species
+#' dat     <- scale_sd(penguins_na.rm[, 1:4])
+#' clas    <- penguins_na.rm$species
 #' bas     <- basis_pca(dat)
 #' mv      <- manip_var_of(bas)
 #' mt_path <- manual_tour(bas, manip_var = mv)
@@ -169,13 +170,12 @@ ggtour <- function(basis_array,
 #'   proto_default(aes_args = list(color = clas, shape = clas),
 #'                 identity_args = list(size = 1.5))
 #' \dontrun{
-#' animate_gganimate(ggt) ## Faceting not likely to play well with `plotly`
+#' animate_gganimate(ggt) ## May not always play well with plotly
 #' }
 facet_wrap_tour <- function(
-  facet_var = NULL, nrow = NULL, ncol = NULL, dir = "h"
+  facet_var, nrow = NULL, ncol = NULL, dir = "h"
 ){
   eval(.init4proto)
-  
   ## Append facet_var to df_basis and df_data if needed.
   if(is.null(facet_var) == FALSE){
     if(is.null(.df_data) == FALSE)
@@ -191,7 +191,7 @@ facet_wrap_tour <- function(
   .ggt$df_data    <- .df_data
   .ggt$facet_var  <- facet_var
   .ggt$is_faceted <- TRUE
-  .set_last_ggtour(.ggt)
+  .set_last_ggtour_env(.ggt)
   
   ## Return
   list(
@@ -217,8 +217,8 @@ facet_wrap_tour <- function(
 #' @family ggtour proto functions
 #' @examples
 #' library(spinifex)
-#' dat     <- scale_sd(penguins[, 1:4])
-#' clas    <- penguins$species
+#' dat     <- scale_sd(penguins_na.rm[, 1:4])
+#' clas    <- penguins_na.rm$species
 #' bas     <- basis_pca(dat)
 #' mv      <- manip_var_of(bas)
 #' mt_path <- manual_tour(bas, manip_var = mv)
@@ -251,26 +251,28 @@ append_fixed_y <- function(
   ## SIDE EFFECT: pass data back to .store
   # to calm some oddities; like proto_origin() complaining about y being missing
   .ggt$df_data <- .df_data
-  .ggt$map_to_data$y <- range(.df_data$y)
+  .ggt$map_to$y <- range(.df_data$y)
   .ggt$d <- 2L
-  .set_last_ggtour(.ggt)
+  .set_last_ggtour_env(.ggt)
   
   ## Return
-  return(NULL)
+  NULL
 }
 
 
 .store <- new.env(parent = emptyenv())
-#' Retrieve/set a list from the last `ggtour()`, required for the use 
-#' of `proto_*` functions.
+#' Retrieve/set last `ggtour()` information
+#' 
+#' Internal information, not related to the ggplot2 object, but used in ggtour
+#' composition by the `proto_*` functions to share/set changes.
 #'
 #' @seealso [ggtour()]
-#' @export
+# #' @export
 #' @keywords internal
-last_ggtour <- function(){.store$ggtour_ls}
-#' @rdname last_ggtour
-#' @export
-.set_last_ggtour <- function(ggtour_list) .store$ggtour_ls <- ggtour_list
+last_ggtour_env <- function(){.store$ggtour_ls}
+#' @rdname last_ggtour_env
+# #' @export
+.set_last_ggtour_env <- function(ggtour_list) .store$ggtour_ls <- ggtour_list
 
 
 #' Replicate all vector elements of a list
@@ -306,7 +308,7 @@ last_ggtour <- function(){.store$ggtour_ls}
     }else ret_vect <- .elem
     list[[i]] <<- ret_vect
   })
-  return(list)
+  list
 }
 
 #' Binds replicated elements of a list as columns of a data frame.
@@ -321,15 +323,15 @@ last_ggtour <- function(){.store$ggtour_ls}
 #' @examples
 #' ## This function is not meant for external use
 .bind_elements2df <- function(list, df){
-  .list <- as.list(list)
-  .ret <- as.data.frame(df)
+  .list    <- as.list(list)
+  .ret     <- as.data.frame(df)
   .ret_nms <- names(.ret)
-  .l_nms <- names(list)
+  .l_nms   <- names(list)
   .m <- lapply(seq_along(.list), function(i){
     .ret <<- cbind(.ret, .list[[i]])
   })
   names(.ret) <- c(.ret_nms, .l_nms)
-  return(.ret)
+  .ret
 }
 
 
@@ -345,8 +347,8 @@ last_ggtour <- function(){.store$ggtour_ls}
 #' ## This expression. is not meant for external use.
 ## _.init4proto expression -----
 .init4proto <- expression({ ## An expression, not a function
-  .ggt <- spinifex::last_ggtour() ## Self-explicit for use in cheem
-  if(is.null(.ggt)) stop(".init4proto: last_ggtour() is NULL, have you run ggtour() yet?")
+  .ggt <- spinifex:::last_ggtour_env() ## Self-explicit for use in cheem
+  if(is.null(.ggt)) stop(".init4proto: spinifex:::last_ggtour_env() is NULL, have you run ggtour() yet?")
   
   ## Assign elements ggtour list as quiet .objects in the environment
   .env <- environment()
@@ -393,8 +395,8 @@ last_ggtour <- function(){.store$ggtour_ls}
             if(length(arg) == .n) arg[row_index] else arg)
       
       #### Subset .df_data, update .n & .nrow_df_data
-      .df_data <- .df_data[rep(row_index, .n_frames),, drop = FALSE]
-      .n <- sum(row_index) ## n rows _slecected_
+      .df_data      <- .df_data[rep(row_index, .n_frames),, drop = FALSE]
+      .n            <- sum(row_index) ## n rows _slecected_
       .nrow_df_data <- nrow(.df_data)
     }
   } ## end row_index, if exists
@@ -419,7 +421,7 @@ last_ggtour <- function(){.store$ggtour_ls}
     }
   if(exists("aes_args"))
     if(length(aes_args) > 0L)
-      aes_args <- spinifex:::.lapply_rep_len(aes_args, .nrow_df_data, .n)
+      aes_args      <- spinifex:::.lapply_rep_len(aes_args, .nrow_df_data, .n)
   if(exists("identity_args"))
     if(length(identity_args) > 0L)
       identity_args <- spinifex:::.lapply_rep_len(identity_args, .nrow_df_data, .n)
@@ -435,8 +437,7 @@ last_ggtour <- function(){.store$ggtour_ls}
 #'
 #' @param ggtour A grammar of graphics tour with appended protos added. 
 #' A return from `ggtour() + proto_*()`.
-#' @param fps Scalar number of Frames Per Second, the speed the animation should 
-#' play at.
+#' @param fps Number of Frames Per Second, the speed resulting animation.
 #' @param rewind Whether or not the animation should play backwards,
 #' in reverse order once reaching the end. Defaults to FALSE.
 #' @param start_pause The duration in seconds to wait before starting the 
@@ -450,8 +451,8 @@ last_ggtour <- function(){.store$ggtour_ls}
 #' @family ggtour animator
 #' @examples
 #' library(spinifex)
-#' dat     <- scale_sd(penguins[, 1:4])
-#' clas    <- penguins$species
+#' dat     <- scale_sd(penguins_na.rm[, 1:4])
+#' clas    <- penguins_na.rm$species
 #' bas     <- basis_pca(dat)
 #' mv      <- manip_var_of(bas)
 #' mt_path <- manual_tour(bas, manip_var = mv)
@@ -460,25 +461,27 @@ last_ggtour <- function(){.store$ggtour_ls}
 #'   proto_default(aes_args = list(color = clas, shape = clas),
 #'                 identity_args = list(size = 1.5, alpha = .7))
 #' \dontrun{
+#' ## Default .gif rendering
 #' animate_gganimate(ggt)
 #' 
 #' if(F){ ## Don't accidentally save file
-#'   ## Alternative arguments storing to a variable for saving
+#'   ## Option arguments, rendering to default .gif
 #'   anim <- animate_gganimate(
 #'     ggt, fps = 10, rewind = TRUE,
 #'     start_pause = 1, end_pause = 2,
-#'     height = 6, width = 10, units = "cm", ## "px", "in", "cm", or "mm."
-#'     res = 150)
-#'   ## Save rendered animation as .gif
+#'     height = 10, width = 15, units = "cm", ## "px", "in", "cm", or "mm."
+#'     res = 200 ## resolution, pixels per dimension unit I think
+#'   )
+#'   ## Save rendered animation
 #'   gganimate::anim_save("my_tour.gif",
 #'                        animation = anim,
 #'                        path = "./figures")
 #'   
-#'   ## Alternative renderer saving directly as an .mp4
-#'   animate_gganimate(ggt,
-#'     height = 10, width = 18, units = "cm", ## "px", "in", "cm", or "mm."
-#'     res = 150, ## resolution, not the same as dpi, 100 seems about 1x zoom 
-#'     render = gganimate::av_renderer("./my_tour.mp4")) ## Alternative render
+#'   ## Alternative renderer saving directly to .mp4
+#'   animate_gganimate(ggt, fps = 5,
+#'     height = 4, width = 6, units = "in", ## "px", "in", "cm", or "mm."
+#'     res = 200, ## resolution, pixels per dimension unit I think
+#'     renderer = gganimate::av_renderer("./my_tour.mp4"))
 #'   }
 #' }
 animate_gganimate <- function(
@@ -489,26 +492,29 @@ animate_gganimate <- function(
   end_pause = 1,
   ... ## Passed to gganimate::animate
 ){
-  ## Early out, print ggplot if oonly 1 frame.
+  ## Early out, print ggplot if only 1 frame.
   if(length(ggtour$layers) == 0L) stop("No layers found, did you forget to add a proto_*?")
-  n_frames <- length(unique(last_ggtour()$df_basis$frame))
+  n_frames <- last_ggtour_env()$n_frames
   if(n_frames == 1L){
-    message("ggtour df_basis only has 1 frame, printing ggtour ggplot2 object instead.")
-    return(print(ggtour))
+    ## Static ggplot2, 1 frame
+    message("ggtour df_basis only has 1 frame, returning ggplot2 object instead.")
+    return(ggtour)
+    ## return(), don't try to send to clean up; 
+    #### Being in if/else env makes transition_states think frame is
+    #### graphics::frame (causes error) and not vars(frame). 
+    #### Using ggtour$data$frame runs, but all data points show in each frame.
   }
-  
+  # Animate
   ## Discrete jump between frames, no linear interpolation.
-  gga <- ggtour + gganimate::transition_states(
-    frame, transition_length = 0L)
+  gga <- ggtour + gganimate::transition_states(frame, transition_length = 0L)
   ## Normal animation, with applied options, knit_pdf_anim == FALSE
-  anim <- gganimate::animate(
-    gga, fps = fps, rewind = rewind,
-    start_pause = fps * start_pause,
-    end_pause = fps * end_pause, ...)
+  ret <- gganimate::animate(gga, fps = fps, rewind = rewind, 
+                            start_pause = fps * start_pause,
+                            end_pause = fps * end_pause, ...)
   
-  .set_last_ggtour(NULL) ## Clears last tour
+  ## Clean up
   .m <- gc() ## Mute garbage collection
-  return(anim)
+  ret
 }
 
 
@@ -518,18 +524,17 @@ animate_gganimate <- function(
 #' `{plotly}` animation, an .html widget with slider and hover tooltip showing 
 #' the row number.
 #'
-#' @param ggtour A grammar of graphics tour with appended protos added. 
+#' @param ggtour A grammar of graphics tour with appended protos added.
 #' A return from `ggtour() + proto_*()`.
-#' @param fps Scalar number of Frames Per Second, the speed the animation should 
-#' play at.
+#' @param fps Number of Frames Per Second, the speed resulting animation.
 #' @param ... Other arguments passed to 
 #' \code{\link[plotly:ggplotly]{plotly::ggplotly}}.
 #' @export
 #' @family ggtour animator
 #' @examples
 #' library(spinifex)
-#' dat     <- scale_sd(penguins[, 1:4])
-#' clas    <- penguins$species
+#' dat     <- scale_sd(penguins_na.rm[, 1:4])
+#' clas    <- penguins_na.rm$species
 #' bas     <- basis_pca(dat)
 #' mv      <- manip_var_of(bas)
 #' mt_path <- manual_tour(bas, manip_var = mv)
@@ -556,61 +561,54 @@ animate_plotly <- function(
   fps = 8,
   ... ## Passed to plotly::ggplotly(). can always call layout/config again
 ){
-  ## Condition handling for ggplot (as opposed to plotly::subplot())
+  ## ggplot or plotly::subplot?
   if(class(ggtour)[1L] == "gg"){
     ## Frame asymmetry issue: https://github.com/ropensci/plotly/issues/1696
     #### Adding many protos is liable to break plotly animations, see above url.
-    ggtour <- ggtour + ggplot2::theme(legend.position  = "right",
-                                      legend.direction = "vertical",   ## Levels within an aesthetic
-                                      legend.box       = "horizontal") ## Between aesthetics
+    ggtour <- ggtour + ggplot2::theme(
+      ## Circumvent plotly warnings
+      legend.direction = "vertical", ## horizontal legenda not supported
+      aspect.ratio     = NULL)       ## aspect.ratio not supported
     ## Assumptions
     if(length(ggtour$layers) == 0L) ## plotly subplots, have NULL layers
       stop("No layers found, did you forget to add a proto_*?")
-    ggtour <- plotly::ggplotly(p = ggtour, tooltip = "tooltip", ...)
-  }
-  n_frames <- length(unique(last_ggtour()$df_basis$frame))
-  ## 1 Frame only:
+    ## ggplotly without animation settings
+    ggp <- plotly::ggplotly(ggtour, tooltip = "tooltip", ...)
+  }else ggp <- ggtour ## plotly::subplot
+  
+  ## ggplotly settings, animated or static from ggplot or subplot
+  ggp <- ggp %>%
+    ## Remove button bar and zoom box
+    plotly::config(displayModeBar = FALSE,
+                   modeBarButtonsToRemove = c("zoomIn2d", "zoomOut2d")) %>%
+    ## Remove legends and axis lines
+    plotly::layout(dragmode = FALSE, legend = list(x = 100L, y = 0.5),
+                   #fixedrange = TRUE, ## This is a curse, never use this.
+                   yaxis = list(showgrid = FALSE, showline = FALSE),
+                   xaxis = list(showgrid = FALSE, showline = FALSE,
+                                scaleanchor = "y", scalaratio = 1L))
+  
+  ## Multiple frames/animation condition handling
+  n_frames <- last_ggtour_env()$n_frames
   if(n_frames == 1L){
-    warning("ggtour df_basis only has 1 frame, applying just plotly::ggplotly instead.")
-    anim <- ggtour %>%
-      ## Remove button bar and zoom box
-      plotly::config(displayModeBar = FALSE,
-                     modeBarButtonsToRemove = c("zoomIn2d", "zoomOut2d")) %>%
-      ## Remove legends and axis lines
-      plotly::layout(dragmode = FALSE, legend = list(x = 100L, y = 0.5),
-                     #fixedrange = TRUE, ## This is a curse, do not use.
-                     yaxis = list(showgrid = FALSE, showline = FALSE),
-                     xaxis = list(showgrid = FALSE, showline = FALSE,
-                                  scaleanchor = "y", scalaratio = 1L))
+    ## Static ggplot, 1 Frame only or possibly last_ggtour_env missing:
+    message("ggtour df_basis only has 1 frame, no animation options.")
+    ret <- ggp
   }else{
-    ## More than 1 frame:
+    ## Animation options, more than 1 frame
     ## Block plotly.js warning: lack of support for horizontal legend;
     #### https://github.com/plotly/plotly.js/issues/53
-    anim <- ggtour %>%
-      plotly::animation_opts(frame = 1L / fps * 1000L,
-                             transition = 0L, redraw = TRUE) %>%
+    ret <- ggp %>% plotly::animation_opts(
+      frame = 1L / fps * 1000L, transition = 0L, redraw = TRUE) %>%
       plotly::animation_slider(
         active = 0L, ## 0 indexed first frame
-        currentvalue = list(prefix = "Frame: ", font = list(color = "black"))) %>%
-      ## Remove button bar and zoom box
-      plotly::config(displayModeBar = FALSE,
-                     modeBarButtonsToRemove = c("zoomIn2d", "zoomOut2d")) %>%
-      ## Remove legends and axis lines
-      plotly::layout(dragmode = FALSE, legend = list(x = 100L, y = 0.5),
-                     #fixedrange = TRUE, ## This is a curse, do not use.
-                     yaxis = list(showgrid = FALSE, showline = FALSE),
-                     xaxis = list(showgrid = FALSE, showline = FALSE,
-                                  scaleanchor = "y", scalaratio = 1L))
+        currentvalue = list(prefix = "Frame: ", font = list(color = "black")))
   }
-  
   ## Clean up
-  .set_last_ggtour(NULL) ## Clears last tour
-  ## This should prevent some errors from not running ggtour() right before animating it.
   .m <- gc() ## Mute garbage collection
-  
-  return(anim)
+  ret
 }
-
+  
 
 # ### animate_gganimate_knit2pdf -----#
 # #' Animate a `ggtour()` to be used in knit into a .pdf format.
@@ -622,8 +620,7 @@ animate_plotly <- function(
 # #' for the required YAML and chunk setings.
 # #'
 # #' @param ggtour The return of a `ggtour()`and added `proto_*()` functions.
-# #' @param fps Scalar number of Frames Per Second, the speed the animation should 
-# #' play at. 
+# #' @param fps Number of Frames Per Second, the speed resulting animation.
 # #' @param rewind Whether or not the animation should play backwards,
 # #' in reverse order once reaching the end. Defaults to FALSE.
 # #' @param start_pause The duration in seconds to wait before starting the 
@@ -634,8 +631,8 @@ animate_plotly <- function(
 # #' @export
 # #' @family ggtour animator
 # #' #' @examples
-# #' dat     <- scale_sd(penguins[, 1:4])
-# #' clas    <- penguins$species
+# #' dat     <- scale_sd(penguins_na.rm[, 1:4])
+# #' clas    <- penguins_na.rm$species
 # #' bas     <- basis_pca(dat)
 # #' mv      <- manip_var_of(bas)
 # #' mt_path <- manual_tour(bas, manip_var = mv)
@@ -652,7 +649,7 @@ animate_plotly <- function(
 # animate_gganimate_knit2pdf <- function(ggtour,
 #                                        ... ## Passed gganimate::knit_print.gganim
 # ){
-#   n_frames <- length(unique(last_ggtour()$df_basis$frame))
+#   n_frames <- length(unique(last_ggtour_env()$df_basis$frame))
 #   if(n_frames == 1L) stop("df_basis only has 1 frame, stopping animation.")
 #   
 #   ## Discrete jump between frames, no linear interpolation.
@@ -676,8 +673,9 @@ animate_plotly <- function(
 #' @export
 #' @family ggtour animator
 #' @examples
-#' dat  <- scale_sd(penguins[, 1:4])
-#' clas <- penguins$species
+#' library(spinifex)
+#' dat  <- scale_sd(penguins_na.rm[, 1:4])
+#' clas <- penguins_na.rm$species
 #' bas  <- basis_pca(dat)
 #' mv   <- manip_var_of(bas)
 #' 
@@ -700,13 +698,10 @@ filmstrip <- function(
 ){
   ret <- ggtour +
     ## Display level of previous facet (if applicable) next level of frame.
-    ggplot2::facet_wrap(c("frame", names(ggtour$facet$params$facets)), ...) +
-    ggplot2::theme(strip.text = ggplot2::element_text(
-      margin = ggplot2::margin(b = 0L, t = 0L)),  ## tighter facet labels
-      panel.spacing = ggplot2::unit(0L, "lines")) ## tighter facet spacing
+    ggplot2::facet_wrap(c("frame", names(ggtour$facet$params$facets)), ...)
   ## filmstrip does NOT clear last tour
   .m <- gc() ## Mute garbage collection
-  return(ret)
+  ret
 }
 
 
@@ -731,8 +726,8 @@ filmstrip <- function(
 #' @family ggtour proto functions
 #' @examples
 #' library(spinifex)
-#' dat  <- scale_sd(penguins[, 1:4])
-#' clas <- penguins$species
+#' dat  <- scale_sd(penguins_na.rm[, 1:4])
+#' clas <- penguins_na.rm$species
 #' bas  <- basis_pca(dat)
 #' mv   <- manip_var_of(bas)
 #' 
@@ -796,9 +791,9 @@ proto_basis <- function(
     .circle <- .bind_elements2df(list(facet_var = "_basis_"), .circle)
   }
   ## Scale to data
-  .center <- map_relative(data.frame(x = 0L, y = 0L), position, .map_to_data)
-  .circle <- map_relative(.circle, position, .map_to_data)
-  .df_basis <- map_relative(.df_basis, position, .map_to_data)
+  .center   <- map_relative(data.frame(x = 0L, y = 0L), position, .map_to)
+  .circle   <- map_relative(.circle, position, .map_to)
+  .df_basis <- map_relative(.df_basis, position, .map_to)
   
   ## Aesthetics for the axes segments.
   .axes_col <- "grey50"
@@ -813,7 +808,7 @@ proto_basis <- function(
   }
   
   ## Return proto
-  return(list(
+  list(
     ggplot2::geom_path(data = .circle, color = "grey80",
                        size = line_size, inherit.aes = FALSE,
                        mapping = ggplot2::aes(x = x, y = y)),
@@ -828,8 +823,7 @@ proto_basis <- function(
       color = .axes_col, size = text_size,
       vjust = "outward", hjust = "outward",
       mapping = ggplot2::aes(x = x, y = y, frame = frame, label = tooltip)
-    ))
-  ))
+    )))
 }
 
 
@@ -881,14 +875,14 @@ proto_basis1d <- function(
     .df_seg0 <- .bind_elements2df(.facet_var, .df_seg0)
   }
   ## Scale them
-  .df_zero <- map_relative(.df_zero, position, .map_to_data)
-  .df_seg  <- map_relative(.df_seg,  position, .map_to_data)
-  .df_txt  <- map_relative(.df_txt,  position, .map_to_data)
-  .df_rect <- map_relative(.df_rect, position, .map_to_data)
-  .df_seg0 <- map_relative(.df_seg0, position, .map_to_data)
+  .df_zero <- map_relative(.df_zero, position, .map_to)
+  .df_seg  <- map_relative(.df_seg,  position, .map_to)
+  .df_txt  <- map_relative(.df_txt,  position, .map_to)
+  .df_rect <- map_relative(.df_rect, position, .map_to)
+  .df_seg0 <- map_relative(.df_seg0, position, .map_to)
   
   ## Return proto
-  return(list(
+  list(
     ## Middle line, grey, dashed
     ggplot2::geom_segment(
       ggplot2::aes(x = min(x), y = min(y), xend = max(x), yend = max(y)),
@@ -905,7 +899,7 @@ proto_basis1d <- function(
     suppressWarnings(ggplot2::geom_segment(
       ggplot2::aes(x = .df_zero$x, y, xend = x, yend = y, frame = frame),
       .df_seg, color = .axes_col, size = .axes_siz))
-  ))
+  )
 }
 
 
@@ -935,8 +929,8 @@ proto_basis1d <- function(
 #' @examples
 #' library(spinifex)
 #' library(ggplot2)
-#' dat  <- scale_sd(penguins[, 1:4])
-#' clas <- penguins$species
+#' dat  <- scale_sd(penguins_na.rm[, 1:4])
+#' clas <- penguins_na.rm$species
 #' bas  <- basis_pca(dat)
 #' proj <- as.data.frame(dat %*% bas)
 #' 
@@ -946,14 +940,13 @@ proto_basis1d <- function(
 #'   coord_fixed()
 #'   
 #' ## Aesthetics and basis on specific facet levels
-#' proj <- cbind(proj, clas = penguins$species)
+#' proj <- cbind(proj, clas = penguins_na.rm$species)
 #' bas <- cbind(as.data.frame(bas), clas = levels(clas)[2])
 #' ggplot() +
 #'   facet_wrap(vars(clas)) +
 #'   geom_point(aes(PC1, PC2, color = clas, shape = clas), proj) +
 #'   draw_basis(bas, proj, "left") +
-#'   theme_bw() +
-#'   coord_fixed()
+#'   theme_spinifex()
 #' ## To repeat basis in all facet levels don't cbind a facet variable.
 draw_basis <- function(
   basis, ## WITH APPENDED FACET LEVEL
@@ -966,8 +959,7 @@ draw_basis <- function(
 ){
   ## Initialize
   d <- ncol(basis)
-  if(d < 2L)
-    stop("geom_basis: expects a basis of 2 or more columns.")
+  if(d < 2L) stop("draw_basis: expects a basis of 2 or more columns.")
   position = match.arg(position)
   if(position == "off") return()
   
@@ -994,9 +986,9 @@ draw_basis <- function(
   }
   
   ## Aesthetics for the axes segments.
-  .axes_col <- "grey50"
-  .axes_siz <- line_size
-  .manip_var <- attr(basis, "manip_var")
+  .axes_col   <- "grey50"
+  .axes_siz   <- line_size
+  .manip_var  <- attr(basis, "manip_var")
   if(is.null(.manip_var) == FALSE){
     .axes_col <- rep("grey50", .p)
     .axes_col[.manip_var] <- manip_col
@@ -1007,7 +999,7 @@ draw_basis <- function(
   }
   
   ## Return proto
-  return(list(
+  list(
     ggplot2::geom_path(data = .circle, color = "grey80",
                        size = line_size, inherit.aes = FALSE,
                        mapping = ggplot2::aes(x = x, y = y)),
@@ -1023,7 +1015,7 @@ draw_basis <- function(
       vjust = "outward", hjust = "outward",
       mapping = ggplot2::aes(x = x, y = y, label = basis_label)
     ))
-  ))
+  )
 }
 
 
@@ -1057,8 +1049,8 @@ draw_basis <- function(
 #' @family ggtour proto functions
 #' @examples
 #' library(spinifex)
-#' dat     <- scale_sd(penguins[, 1:4])
-#' clas    <- penguins$species
+#' dat     <- scale_sd(penguins_na.rm[, 1:4])
+#' clas    <- penguins_na.rm$species
 #' gt_path <- save_history(dat, grand_tour(), max_bases = 5)
 #' 
 #' ggt <- ggtour(gt_path, dat, angle = .3) +
@@ -1145,8 +1137,8 @@ proto_point <- function(
 #' @family ggtour proto functions
 #' @examples
 #' library(spinifex)
-#' dat     <- scale_sd(penguins[, 1:4])
-#' clas    <- penguins$species
+#' dat     <- scale_sd(penguins_na.rm[, 1:4])
+#' clas    <- penguins_na.rm$species
 #' gt_path <- save_history(dat, grand_tour(), max = 3)
 #' 
 #' ggt <- ggtour(gt_path, dat, angle = .3) +
@@ -1165,22 +1157,21 @@ proto_density <- function(
   rug_shape = c(3, 142, 124, NULL)
 ){
   ## Initialize
-  eval(.init4proto)
-  
   if(class(transformr::tween_polygon) != "function")
-    stop("proto_density requires {transformr}::tween_polygon")
+    stop("proto_density requires the {transformr} package, please try install.packages('transformr')")
+  eval(.init4proto)
   if(is.null(.df_data))
-    stop("proto_density: data missing. Did you call ggtour() on a manual tour without passing data?")
+    stop("proto_density: Data is NULL. Was data passed to the basis array or ggtour?")
   .nms <- names(aes_args)
   if(any(c("color", "colour", "col") %in% .nms) & !("fill" %in% .nms))
-    warning("proto_density: aes_args contains color without fill, did you mean to use fill to color below the curve?")
+    warning("proto_density: aes_args contains color without fill, did you mean to use fill instead?")
   density_position <- match.arg(density_position)
   rug_shape <- rug_shape[1L]
   ## plotly only renders position = "identity" atm.
   ## see: https://github.com/ropensci/plotly/issues/1544
   
   ## geom_density do.call
-  y_coef <- diff(range(.map_to_data$y))
+  y_coef <- diff(range(.map_to$y))
   .aes_func <- function(...)
     ggplot2::aes(x = x, y = y_coef * ..ndensity.., frame = frame, ...)
   .aes_call <- do.call(.aes_func, aes_args)
@@ -1229,8 +1220,8 @@ proto_density <- function(
 #' @family ggtour proto functions
 #' @examples
 #' library(spinifex)
-#' dat     <- scale_sd(penguins[, 1:4])
-#' clas    <- penguins$species
+#' dat     <- scale_sd(penguins_na.rm[, 1:4])
+#' clas    <- penguins_na.rm$species
 #' gt_path <- save_history(dat, grand_tour(), max = 3)
 #' 
 #' ## geom_density_2d args can be passed in identity_args (bins, binwidth, breaks) 
@@ -1290,8 +1281,8 @@ proto_density2d <- function(
 #' @family ggtour proto functions
 #' @examples
 #' library(spinifex)
-#' dat     <- scale_sd(penguins[, 1:4])
-#' clas    <- penguins$species
+#' dat     <- scale_sd(penguins_na.rm[, 1:4])
+#' clas    <- penguins_na.rm$species
 #' bas     <- basis_pca(dat)
 #' mv      <- manip_var_of(bas)
 #' gt_path <- save_history(dat, grand_tour(), max_bases = 5)
@@ -1316,7 +1307,8 @@ proto_text <- function(aes_args = list(),
 ){
   ## Initialize
   eval(.init4proto)
-  if(is.null(.df_data)) stop("Data is NULL, proto not applicable.")
+  if(is.null(.df_data))
+    stop("proto_text: Data is NULL. Was data passed to the basis array or ggtour?")
   if(is.null(.df_data$y))
     stop("proto_text: Projection y not found, expected a 2D tour.")
   
@@ -1381,7 +1373,7 @@ proto_hex <- function(
   if(is.null(.df_data))
     stop("proto_hex: Data is missing. Did you call ggtour() on a manual tour without passing data?")
   if(is.null(.df_data$y))
-    stop("proto_hex: data `y` not found, expected a 2D tour.")
+    stop("proto_hex: Projection y not found, expected a 2D tour.")
   
   ## do.call aes() over the aes_args
   .aes_func <- function(...)
@@ -1423,8 +1415,8 @@ proto_hex <- function(
 #' @family ggtour proto functions
 #' @examples
 #' library(spinifex)
-#' dat     <- scale_sd(penguins[, 1:4])
-#' clas    <- penguins$species
+#' dat     <- scale_sd(penguins_na.rm[, 1:4])
+#' clas    <- penguins_na.rm$species
 #' gt_path <- save_history(dat, grand_tour(), max_bases = 5)
 #' 
 #' ## d = 2 case
@@ -1450,9 +1442,10 @@ proto_highlight <- function(
   mark_initial = FALSE
 ){
   ## Initialize
-  if(is.null(row_index)) return()
+  if(is.null(row_index)) return() ## Must be handle this NULL gracefully
   eval(.init4proto) ## aes_args/identity_args/df_data subset in .init4proto.
-  if(is.null(.df_data)) stop("Data is NULL, proto not applicable.")
+  if(is.null(.df_data))
+    stop("proto_highlight: Data is NULL. Was data passed to the basis array or ggtour?")
   if(is.null(.df_data$y))
     stop("proto_highlight: Projection y not found, expecting a 2D tour. Did you mean to call `proto_highlight1d`?")
   
@@ -1482,7 +1475,6 @@ proto_highlight <- function(
   ret
 }
 
-
 #' @rdname proto_highlight
 #' @export
 #' @examples
@@ -1511,13 +1503,14 @@ proto_highlight1d <- function(
   mark_initial = FALSE
 ){
   ## Initialize
-  if(is.null(row_index)) return()
+  if(is.null(row_index)) return() ## Must be handle this NULL gracefully.
   eval(.init4proto)
-  if(is.null(.df_data)) return()
-
+  if(is.null(.df_data))
+    stop("proto_highlight1d: Data is NULL. Was data passed to the basis array or ggtour?")
+  
   ## geom_segment do.calls, moving with frame
-  .ymin <- min(.map_to_data$y)
-  .ymax <- max(.map_to_data$y)
+  .ymin <- min(.map_to$y)
+  .ymax <- max(.map_to$y)
   .segment_tail <- diff(c(.ymin, .ymax)) * .05
   .aes_func <- function(...)
     ggplot2::aes(x = x, xend = x,  y = .ymin - .segment_tail,
@@ -1565,8 +1558,8 @@ proto_highlight1d <- function(
 #' @export
 #' @examples
 #' library(spinifex)
-#' dat     <- scale_sd(penguins[, 1:4])
-#' clas    <- penguins$species
+#' dat     <- scale_sd(penguins_na.rm[, 1:4])
+#' clas    <- penguins_na.rm$species
 #' gt_path <- save_history(dat, grand_tour(), max_bases = 5)
 #' 
 #' ggt <- ggtour(gt_path, dat, angle = .3) +
@@ -1585,14 +1578,11 @@ proto_frame_cor2 <- function(
   ## Initialize
   eval(.init4proto)
   if(is.null(.df_data))
-    stop("proto_frame_stat: Data is NULL; stat not applicable. Was data passed to the basis array or ggtour?")
+    stop("proto_frame_stat: Data is NULL. Was data passed to the basis array or ggtour?")
   
   ## Find aggregated values, stat within the frame
-  if(.is_faceted){
-    .gb <- .df_data %>% dplyr::group_by(frame, facet_var)
-  }else{
-    .gb <- .df_data %>% dplyr::group_by(frame)
-  }
+  if(.is_faceted){.gb <- .df_data %>% dplyr::group_by(frame, facet_var)
+  }else{.gb <- .df_data %>% dplyr::group_by(frame)}
   .agg <- .gb %>%
     dplyr::summarise(value = round(stats::cor(x, y, ...)^2L, 2L)) %>%
     dplyr::ungroup()
@@ -1637,8 +1627,8 @@ proto_frame_cor2 <- function(
 #' @family ggtour proto functions
 #' @examples
 #' library(spinifex)
-#' dat  <- scale_sd(penguins[, 1:4])
-#' clas <- penguins$species
+#' dat  <- scale_sd(penguins_na.rm[, 1:4])
+#' clas <- penguins_na.rm$species
 #' 
 #' ## 2D case:
 #' gt_path <- save_history(dat, grand_tour(), max_bases = 5)
@@ -1653,16 +1643,15 @@ proto_origin <- function(
   tail_size = .05){
   ## Initialize
   eval(.init4proto)
-  if(is.null(.df_data$y)) return()
   if(is.null(.df_data$y))
     stop("proto_origin: data y not found, expects a 2D tour.")
   
   #### Setup origin, zero mark, 5% on each side.
   .df_0range <- data.frame(x = c(0L, range(.df_data$x)),
                            y = c(0L, range(.df_data$y)))
-  .zero <- map_relative(.df_0range, "full", .map_to_data)[1L,, drop = FALSE]
-  .tail <- tail_size / 2L * max(diff(range(.map_to_data$x)),
-                                diff(range(.map_to_data$y)))
+  .zero <- map_relative(.df_0range, "full", .map_to)[1L,, drop = FALSE]
+  .tail <- tail_size / 2L * max(diff(range(.map_to$x)),
+                                diff(range(.map_to$y)))
   .df_origin <- data.frame(x     = c(.zero$x - .tail, .zero$x),
                            x_end = c(.zero$x + .tail, .zero$x),
                            y     = c(.zero$y, .zero$y - .tail),
@@ -1701,12 +1690,13 @@ proto_origin1d <- function(
 ){
   ## Initialize
   eval(.init4proto)
-  if(is.null(.df_data)) return()
+  if(is.null(.df_data))
+    stop("proto_origin1d: Data is NULL. Was data passed to the basis array or ggtour?")
   
   .df_0range <- data.frame(x = c(0L, range(.df_data$x)),
                            y = c(0L))
-  .zero <- map_relative(.df_0range, "full", .map_to_data)[1L,, drop = FALSE]
-  .tail <- diff(range(.map_to_data$y)) * .55
+  .zero <- map_relative(.df_0range, "full", .map_to)[1L,, drop = FALSE]
+  .tail <- diff(range(.map_to$y)) * .55
   .df_origin <- data.frame(
     x     = c(.zero$x, .zero$x),
     x_end = c(.zero$x, .zero$x),
@@ -1742,8 +1732,9 @@ proto_origin1d <- function(
 #' @aliases proto_hline
 #' @family ggtour proto functions
 #' @examples
-#' dat  <- scale_sd(penguins[, 1:4])
-#' clas <- penguins$species
+#' library(spinifex)
+#' dat  <- scale_sd(penguins_na.rm[, 1:4])
+#' clas <- penguins_na.rm$species
 #' 
 #' ## 2D case:
 #' gt_path <- save_history(dat, grand_tour(), max_bases = 5)
@@ -1759,14 +1750,15 @@ proto_hline0 <- function(
 ){
   ## Initialize
   eval(.init4proto)
-  if(is.null(.df_data)) stop("Data is NULL, proto not applicable.")
+  if(is.null(.df_data)) 
+    stop("proto_hline0: Data is NULL. Was data passed to the basis array or ggtour?")
   if(is.null(.df_data$y))
-    stop("proto_hline: data y not found, expects a 2D tour.")
+    stop("proto_hline0: Projection y not found, expects a 2D tour.")
   
   ## Dataframe
   .df_zero <- map_relative(data.frame(x = c(0L, range(.df_data$x)),
                                       y = c(0L, range(.df_data$y))),
-                           "center", .map_to_data)[1L,, drop = FALSE]
+                           "center", .map_to)[1L,, drop = FALSE]
   if(.is_faceted){
     .df_u_facet_lvls <- data.frame(facet_var = factor(unique(.facet_var)))
     .df_zero <- merge(.df_zero, .df_u_facet_lvls)
@@ -1789,14 +1781,15 @@ proto_vline0 <- function(
 ){
   ## Initialize
   eval(.init4proto)
-  if(is.null(.df_data)) stop("Data is NULL, proto not applicable.")
+  if(is.null(.df_data)) 
+    stop("proto_vline0: Data is NULL. Was data passed to the basis array or ggtour?")
   if(is.null(.df_data$y))
-    stop("proto_hline: data y not found, expects a 2D tour. Did you mean to call `proto_origin1d`?")
+    stop("proto_vline0: Projection y not found, expects a 2D tour. Did you mean to call `proto_origin1d`?")
   
   ## dataframe
   .df_zero <- map_relative(data.frame(x = c(0L, range(.df_data$x)),
                                       y = c(0L, range(.df_data$y))),
-                           "center", .map_to_data)[1L,, drop = FALSE]
+                           "center", .map_to)[1L,, drop = FALSE]
   if(.is_faceted){
     .df_u_facet_lvls <- data.frame(facet_var = factor(unique(.facet_var)))
     .df_zero <- merge(.df_zero, .df_u_facet_lvls)
@@ -1828,8 +1821,9 @@ proto_vline0 <- function(
 #' @aliases proto_default2d proto_def proto_def2d
 #' @family ggtour proto functions
 #' @examples
-#' dat  <- scale_sd(penguins[, 1:4])
-#' clas <- penguins$species
+#' library(spinifex)
+#' dat  <- scale_sd(penguins_na.rm[, 1:4])
+#' clas <- penguins_na.rm$species
 #' 
 #' ## 2D case:
 #' bas     <- basis_pca(dat)
@@ -1898,19 +1892,18 @@ if(FALSE){ ## DONT RUN
     # #' \dontrun{
     # #' animate_plotly(ggt)
     # #' }
-    proto_basis_text <- function(
+    proto_basis_table <- function(
       position = c("right"),
       text_size = 5
     ){
       ## Initialize
       eval(.init4proto)
-      browser()
       
       ## make positions to be joined to .df_basis
       .u_frame <- data.frame(frame = unique(.df_basis$frame))
       d <- 0L:.d; p <- 1L:.p
       .pos <- merge(d, p) %>%
-        map_relative(position, .map_to_data) %>%
+        map_relative(position, .map_to) %>%
         merge(.u_frame)
       colnames(.pos) <- c("d", "p", "frame")
       ## round basis contributions
@@ -1948,8 +1941,10 @@ if(FALSE){ ## DONT RUN
   ){
     ## Initialize
     eval(.init4proto)
-    if(is.null(.df_data)) stop("Data is NULL, proto not applicable.")
-    if(is.null(.df_data$y)) stop("proto_hdr: Projection y not found, expects a 2D tour.")
+    if(is.null(.df_data))
+      stop("proto_hdr: Data is NULL. Was data passed to the basis array or ggtour?")
+    if(is.null(.df_data$y))
+      stop("proto_hdr: Projection y not found, expects a 2D tour.")
     
     ##TODO: DENSITY WORK & SEGMENT.
     #### each segment will need it's own .aes and .geom do.calls.

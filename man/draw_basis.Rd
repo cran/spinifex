@@ -44,8 +44,8 @@ Not a \code{geom} or \code{proto}. Expects
 \examples{
 library(spinifex)
 library(ggplot2)
-dat  <- scale_sd(penguins[, 1:4])
-clas <- penguins$species
+dat  <- scale_sd(penguins_na.rm[, 1:4])
+clas <- penguins_na.rm$species
 bas  <- basis_pca(dat)
 proj <- as.data.frame(dat \%*\% bas)
 
@@ -55,13 +55,12 @@ ggplot() +
   coord_fixed()
   
 ## Aesthetics and basis on specific facet levels
-proj <- cbind(proj, clas = penguins$species)
+proj <- cbind(proj, clas = penguins_na.rm$species)
 bas <- cbind(as.data.frame(bas), clas = levels(clas)[2])
 ggplot() +
   facet_wrap(vars(clas)) +
   geom_point(aes(PC1, PC2, color = clas, shape = clas), proj) +
   draw_basis(bas, proj, "left") +
-  theme_bw() +
-  coord_fixed()
+  theme_spinifex()
 ## To repeat basis in all facet levels don't cbind a facet variable.
 }

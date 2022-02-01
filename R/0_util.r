@@ -40,6 +40,8 @@ is_orthonormal <- function(x, tol = 0.001) {
 #' rownames of basis.
 #' @param data_label Labels for `plotly` tooltip display. 
 #' Defaults to the rownames of data. If null, initializes to 1:nrow(data).
+#' @param do_center_frame Whether or not to center the mean within each 
+#' animation frame. Defaults to TRUE.
 #' @export
 #' @examples
 #' ## !!This function is not meant for external use!!
@@ -50,8 +52,8 @@ is_orthonormal <- function(x, tol = 0.001) {
 #' 
 #' ## Radial tour array to long df, as used in play_manual_tour()
 #' mt_array <- manual_tour(basis = bas, manip_var = mv)
-#' ls_df_frames <- array2df(basis_array = mt_array, data = dat_std)#,
-#'                          #basis_label = paste0("MyLabs", 1:nrow(bas)))
+#' ls_df_frames <- array2df(basis_array = mt_array, data = dat_std,
+#'                          basis_label = paste0("MyLabs", 1:nrow(bas)))
 #' str(ls_df_frames)
 #' 
 #' ## tourr::save_history tour array to long df, as used in play_tour_path()
@@ -60,24 +62,26 @@ is_orthonormal <- function(x, tol = 0.001) {
 #' str(ls_df_frames2)
 array2df <- function(
   basis_array,
-  data = NULL,
-  basis_label = NULL,
-  data_label = rownames(data)
+  data            = NULL,
+  basis_label     = NULL,
+  data_label      = rownames(data),
+  do_center_frame = TRUE
 ){
+  ## Initialize
+  p <- nrow(basis_array)
+  d <- ncol(basis_array)
+  n_frames <- dim(basis_array)[3L]
+  if("history_array" %in% class(basis_array)) class(basis_array) <- "array"
+  manip_var <- attributes(basis_array)$manip_var ## NULL means tourr tour
   ## Condition handle basis labels.
   if(is.null(basis_label)){
     if(is.null(data) == FALSE){
       basis_label <- abbreviate(colnames(data), 3L)
     }else basis_label <- abbreviate(rownames(basis_array), 3L)
-    if(is.null(basis_label)) basis_label <- paste0("v", 1L:nrow(basis_array))
+    if(is.null(basis_label)) basis_label <- paste0("v", 1L:p)
   }
-  ## Initialize
-  if("history_array" %in% class(basis_array)) class(basis_array) <- "array"
-  manip_var <- attributes(basis_array)$manip_var ## NULL means tourr tour
-  p <- dim(basis_array)[1L]
-  n_frames <- dim(basis_array)[3L]
   
-  ## Basis condition handling
+  ## Basis frames df
   ##*duplicate first frame; does it help plotly anim?
   #basis_frames <-cbind(basis_array[,, 1L], 1L)
   basis_frames <- NULL 
@@ -87,29 +91,32 @@ array2df <- function(
   })
   basis_frames <- as.data.frame(basis_frames)
   .nms <- c("x", "y", "z", "w")
-  if(ncol(basis_array) > 4L) .nms <- c(.nms, paste0("y"))
-  colnames(basis_frames) <- c(.nms[1L:ncol(basis_array)], "frame")
+  if(d > 4L) .nms <- c(.nms, paste0("y"))
+  colnames(basis_frames) <- c(.nms[1L:d], "frame")
   ## Basis label and manip_var attribute.
   if(length(basis_label) > 0L)
     basis_frames$tooltip <- rep_len(basis_label, nrow(basis_frames))
   attr(basis_frames, "manip_var") <- manip_var
   
-  ## Data; if exists
+  ## Basis frames df; if exists
   if(is.null(data) == FALSE){
-    if(ncol(data) != nrow(basis_array))
+    if(ncol(data) != p)
       stop(paste0(
         "array2df: Non-conformable matrices; data has ", ncol(data),
-        " columns while basis has ", nrow(basis_array), " rows."))
+        " columns while basis has ", p, " rows."))
     data <- as.matrix(data)
     ##*Duplicate first frame; see if it helps plotly.
-    #*.new_frame <- data %*% matrix(basis_array[,, 1L], nrow(basis_array), ncol(basis_array))
+    #*.new_frame <- data %*% matrix(basis_array[,, 1L], p, d)
     #*data_frames <- cbind(.new_frame, 1L) ## Init
     data_frames <- NULL
     .mute <- sapply(1L:n_frames, function(i){
-      new_frame <- data %*% matrix(basis_array[,, i], nrow(basis_array), ncol(basis_array))
+      new_frame <- data %*% matrix(basis_array[,, i], p, d)
+      if(do_center_frame)
+        new_frame <- apply(new_frame, 2L, function(c){(c - mean(c))})
       new_frame <- cbind(new_frame, i) #*+ 1L) ## Append frame number
       data_frames <<- rbind(data_frames, new_frame) ## Add rows to df
     })
+    data_frames[, 1L:d] <- data_frames[, 1L:d] %>% scale_01()
     data_frames <- as.data.frame(data_frames)
     colnames(data_frames) <- c(.nms[1L:ncol(basis_array)], "frame")
     ## Data label rep if applicable
@@ -120,10 +127,10 @@ array2df <- function(
   
   ## Return, include data if it exists.
   if(exists("data_frames")){
-    return(list(basis_frames = basis_frames,
-                data_frames  = data_frames))
+    ret <- list(basis_frames = basis_frames, data_frames = data_frames)
   } else
-    return(list(basis_frames = basis_frames))
+    ret <- list(basis_frames = basis_frames)
+  ret
 }
 
 
@@ -136,10 +143,11 @@ array2df <- function(
 #' the `to` object.
 #' @param position Text specifying the position the axes should go to.
 #' Defaults to "center" expects one of: c("center", "left", "right", 
-#' "bottomleft", "topright", "full", "off", "top1d", "floor1d", "bottom1d").
+#' "bottomleft", "topright", "off", "full", "top1d", "floor1d", "bottom1d",
+#' "full", "facetleft", "facetright", "facettop", "facetbottom").
 #' @param to Data.frame to scale to.
 #' Based on the min/max of the first 2 columns. If left NULL defaults to 
-#' data.frame(x = c(-1L, 1L), y = c(-1L, 1L).
+#' data.frame(x = c(0, 1), y = c(0, 1).
 #' @return Transformed values of `x`, dimension and class unchanged.
 #' @seealso \code{\link{map_absolute}} for more manual control.
 #' @export
@@ -153,14 +161,16 @@ array2df <- function(
 map_relative <- function(
   x,
   position = c("center", "left", "right",
-               "bottomleft", "topright", "full", "off",
-               "top1d", "floor1d", "bottom1d"),
+               "bottomleft", "topright", "off",
+               "top1d", "floor1d", "bottom1d",
+               "full", "facetleft", "facetright",
+               "facettop", "facetbottom"),
   to = NULL
 ){
   ## Assumptions
-  if(is.null(to)) to <- data.frame(x = c(-1L, 1L), y = c(-1L, 1L))
   position <- match.arg(position)
-  if(position == "off") return()
+  if(position == "off" | is.null(x)) return()
+  if(is.null(to)) to <- data.frame(x = c(0L, 1L), y = c(0L, 1L))
   
   ## Initialize
   xrange  <- range(to[, 1L])
@@ -173,10 +183,6 @@ map_relative <- function(
   ## Condition handling of position
   if(position == "center"){
     scale <- .4 * min(xdiff, ydiff)
-    xoff  <- xcenter
-    yoff  <- ycenter
-  } else if(position == "full"){
-    scale <- .5 * min(xdiff, ydiff)
     xoff  <- xcenter
     yoff  <- ycenter
   } else if(position == "left"){
@@ -210,6 +216,26 @@ map_relative <- function(
     scale <- .25 * min(xdiff, ydiff)
     xoff  <- .25 * xdiff + xcenter
     yoff  <- .5 * ydiff + ycenter
+  } else if(position == "full"){
+    scale <- .5 * min(xdiff, ydiff)
+    xoff  <- xcenter
+    yoff  <- ycenter
+  } else if(position == "facetleft"){
+    scale <- .5 * min(xdiff, ydiff)
+    xoff  <- xcenter - .5025 * xdiff
+    yoff  <- ycenter
+  } else if(position == "facetright"){
+    scale <- .5 * min(xdiff, ydiff)
+    xoff  <- xcenter + .5025 * xdiff
+    yoff  <- ycenter
+  } else if(position == "facettop"){
+    scale <- .5 * min(xdiff, ydiff)
+    xoff  <- xcenter
+    yoff  <- ycenter + .5025 * ydiff
+  } else if(position == "facetbottom"){
+    scale <- .5 * min(xdiff, ydiff)
+    xoff  <- xcenter
+    yoff  <- ycenter - .5025 * ydiff
   } else stop(paste0("position: ", position, " not defined."))
   
   ## Apply scale and return
@@ -253,8 +279,8 @@ scale_axes <- function(...) {
 #' 
 #' map_absolute(bas, offset = c(-2, 0), scale = c(2/3, 2/3))
 map_absolute <- function(x,
-                         offset = c(0L, 0L),
-                         scale = c(1L, 1L)
+                         offset = c(0, 0),
+                         scale  = c(1, 1)
 ){
   ret <- x
   ret[, 1L] <- ret[, 1L] * offset[1L] + scale[1L]
@@ -266,7 +292,7 @@ map_absolute <- function(x,
 #' @section \code{pan_zoom}:
 #' For \code{pan_zoom}, use \code{\link{map_absolute}}.
 #' @export
-pan_zoom <- function(x, pan = c(0L, 0L), zoom = c(1L, 1L)) {
+pan_zoom <- function(x, pan = c(0, 0), zoom = c(1, 1)) {
   .Deprecated("map_absolute")
   map_absolute(x, pan, zoom)
 }
@@ -323,7 +349,7 @@ scale_01 <- function(data){
 #     theme(legend.position = "bottom",
 #           legend.direction = "horizontal", ## Levels within aesthetic
 #           legend.box = "vertical",         ## Between aesthetic
-#           legend.margin = margin(0L,0L,0L,0L, "mm"), ## Tighter legend margin
+#           legend.margin = margin(0L,0L,0L,0L), ## Tighter legend margin
 #           axis.title = element_text() ## Allow axis titles, though defaulted to blank
 #     )
 #   list(.theme,
@@ -351,7 +377,7 @@ scale_01 <- function(data){
 #' @seealso \code{\link[Rdimtools:do.pca]{Rdimtools::do.pca}}
 #' @export
 #' @family basis producing functions
-#' @examples 
+#' @examples
 #' dat_std <- scale_sd(wine[, 2:6])
 #' basis_pca(data = dat_std)
 basis_pca <- function(data, d = 2){
@@ -382,15 +408,14 @@ basis_pca <- function(data, d = 2){
 #' @family basis producing functions
 #' @examples 
 #' dat_std <- scale_sd(wine[, 2:6])
-#' clas <- wine$Type
+#' clas    <- wine$Type
 #' basis_olda(data = dat_std, class = clas)
 basis_olda <- function(data, class, d = 2){
   #lda <- MASS::lda(class ~ ., data = data.frame(data, class))$scaling
   #ret <- tourr::orthonormalise(lda)[, 1L:d, drop = FALSE]
-  #colnames(ret) <- paste0("OLD", 1:d)
   ret <- Rdimtools::do.olda(X = as.matrix(data),
                             label = as.factor(class),
-                             ndim = d)$projection
+                            ndim = d)$projection
   rownames(ret) <- colnames(data)
   colnames(ret) <- paste0("oLD", 1:d)
   ret
@@ -569,17 +594,18 @@ theme_spinifex <- function(...){
   ## Color/fill discrete also masked to reduced warnings/messages
   list(theme_minimal(),
        theme(
+         axis.text        = element_blank(),
          panel.grid.major = element_blank(),
          panel.grid.minor = element_blank(),
-         axis.text        = element_blank(),
-         axis.title       = element_text(), ## Allow axis titles, though defaulted to blank
          legend.position  = "bottom",
-         legend.direction = "horizontal", ## Levels within an aesthetic
-         legend.box       = "vertical",   ## Between aesthetics
-         legend.margin    = margin(1L,1L,1L,1L, "mm"), ## Tighter legend margin
-         ...), ## ... applied over defaults.
-       coord_fixed(clip = "off"),
-       labs(x = "", y = "", color = "", shape = "", fill = "")
+         legend.direction = "horizontal",             ## Levels within an aesthetic
+         legend.box       = "vertical",               ## Between aesthetics
+         legend.margin    = margin(0L, 0L, 0L, 0L),   ## Tighter legend margin
+         panel.spacing    = unit(4L, "points"),       ## Facet spacing
+         strip.background = element_rect(size = .6, color = "grey80"),
+         #strip.text       = element_text(
+         #  margin = margin(b = 0L, t = 0L)),          ## Tighter facet strips
+         ...)                                         ## Ellipsis trumps defaults
   )
 }
 
@@ -649,7 +675,7 @@ manip_var_of <- function(basis, rank = 1){
 #' @examples 
 #' library(spinifex)
 #' 
-#' dat <- scale_sd(penguins[, 1:4])
+#' dat <- scale_sd(penguins_na.rm[, 1:4])
 #' ## A grand tour path
 #' gt_path <- save_history(data = dat, tour_path = grand_tour(), max_bases = 10)
 #' dim(gt_path)

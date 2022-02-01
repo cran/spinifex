@@ -7,12 +7,13 @@ require("plotly")
 
 
 ##### Initialize ----
-## Create contextLine, a string containing App name, spinifex version, and sys date.
-.wd <- getwd()
-.regex <- regexpr("\\/[^\\/]*$", .wd)
+## Create contextLine; App name, spinifex version, and sys date.
+.wd         <- getwd()
+.regex      <- regexpr("\\/[^\\/]*$", .wd)
 .local_path <- substr(.wd, .regex + 1L, nchar(.wd))
+.title      <- paste0("spinifex --- ", .local_path)
 contextLine <- paste0(.local_path, " app, ",
-                      " --- {spinifex} ver. ", packageVersion("spinifex"),
+                      " --- spinifex (v", packageVersion("spinifex"), ")",
                       " --- ", Sys.Date())
 
 ### tabData -----
@@ -28,8 +29,8 @@ tabData <- tabPanel(
                   "flea"),
       conditionalPanel("input.dat == 'Upload file'",
                        fileInput("data_file", "Data file",
-                                 placeholder = "<Select a .csv, .rda, or .rds file>",
-                                 accept = c("text/csv", "text/comma-separated-values,text/plain", ".csv", ".rda", ".rds")
+                                 placeholder = "<Select a .csv or .rds file>",
+                                 accept = c("text/csv", "text/comma-separated-values,text/plain", ".csv",  ".rds")
                        ),
                        verbatimTextOutput("data_msg")),
       ## Select the projection variables
@@ -72,7 +73,7 @@ ui <- fluidPage(
   tags$head(tags$style(HTML("hr {border-top: 1px solid #000000;}"))),
   #### Content:
   navbarPage(
-    paste0("{spinifex} app --- ", .local_path),
+    .title,
     tabData,
     tabRadial
   ),

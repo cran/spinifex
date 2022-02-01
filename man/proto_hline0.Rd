@@ -24,8 +24,9 @@ Adds a vertical/horizontal line with an intercept of 0, scaled to the data
 frame.
 }
 \examples{
-dat  <- scale_sd(penguins[, 1:4])
-clas <- penguins$species
+library(spinifex)
+dat  <- scale_sd(penguins_na.rm[, 1:4])
+clas <- penguins_na.rm$species
 
 ## 2D case:
 gt_path <- save_history(dat, grand_tour(), max_bases = 5)

@@ -10,8 +10,7 @@ animate_plotly(ggtour, fps = 8, ...)
 \item{ggtour}{A grammar of graphics tour with appended protos added.
 A return from \verb{ggtour() + proto_*()}.}
 
-\item{fps}{Scalar number of Frames Per Second, the speed the animation should
-play at.}
+\item{fps}{Number of Frames Per Second, the speed resulting animation.}
 
 \item{...}{Other arguments passed to
 \code{\link[plotly:ggplotly]{plotly::ggplotly}}.}
@@ -23,8 +22,8 @@ the row number.
 }
 \examples{
 library(spinifex)
-dat     <- scale_sd(penguins[, 1:4])
-clas    <- penguins$species
+dat     <- scale_sd(penguins_na.rm[, 1:4])
+clas    <- penguins_na.rm$species
 bas     <- basis_pca(dat)
 mv      <- manip_var_of(bas)
 mt_path <- manual_tour(bas, manip_var = mv)

@@ -22,9 +22,9 @@ library("ggplot2")
 library("dplyr")
 
 ## ----view-basis---------------------------------------------------------------
-dat_std <- scale_sd(penguins[, 1:4])
+dat_std <- scale_sd(penguins_na.rm[, 1:4])
 bas_pca <- basis_pca(dat_std)
-clas    <- penguins$species
+clas    <- penguins_na.rm$species
 
 ggtour(basis_array = bas_pca, data = dat_std) +
   proto_basis()
@@ -84,7 +84,7 @@ ggplot(rot_xy, aes(x = x, y = y)) + geom_point(size = 0.3) +
   theme_bw() + labs(x = "", y = "")
 
 ## -----------------------------------------------------------------------------
-dat_std    <- scale_sd(penguins[, 1:4])
+dat_std    <- scale_sd(penguins_na.rm[, 1:4])
 holes_path <- save_history(dat_std, tourr::guided_tour(tourr::holes(), ))
 
 ggt <- ggtour(holes_path, dat_std) + proto_default()
