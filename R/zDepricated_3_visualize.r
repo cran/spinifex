@@ -291,34 +291,27 @@ oblique_basis <- function(...) {
 #' contributions of the basis. Defaults to 1.
 #' @param text_size The size of the text labels of the variable 
 #' contributions of the basis. Defaults to 5.
-#' @param ggproto A list of ggplot2 function calls.
-#' Anything that would be "added" to ggplot(); in the case of applying a theme,
-#' `ggplot() + theme_bw()` becomes `ggproto = list(theme_bw())`.
-#' Intended for aesthetic ggplot2 functions (not geom_* family).
 #' @return ggplot object of the basis.
 #' @export
 #' @examples
+#' library(spinifex)
 #' dat_std <- scale_sd(wine[, 2:6])
-#' bas <- basis_pca(dat_std)
-#' mv <- manip_var_of(bas)
+#' bas     <- basis_pca(dat_std)
+#' mv      <- manip_var_of(bas)
 #' 
 #' view_manip_space(basis = bas, manip_var = mv)
 #' 
 #' view_manip_space(basis = bas, manip_var = mv,
 #'                  tilt = 2/12 * pi, basis_label = paste0("MyNm", 1:ncol(dat_std)),
-#'                  manip_col = "purple", manip_sp_col = "orange", 
-#'                  ggproto = list(ggplot2::theme_void(), ggplot2::ggtitle("My title")))
+#'                  manip_col = "purple", manip_sp_col = "orange")
 view_manip_space <- function(basis,
                              manip_var,
                              tilt = .1 * pi,
                              basis_label = abbreviate(row.names(basis), 3),
                              manip_col = "blue",
                              manip_sp_col = "red",
-                             line_size = 1,
-                             text_size = 5,
-                             ggproto = list(
-                               theme_spinifex()
-                             )
+                             line_size = .6,
+                             text_size = 4
 ){
   ## NOT DEPRICATED, don't get this with the ggtour api.
   
@@ -376,7 +369,9 @@ view_manip_space <- function(basis,
   theta_curve_r <- as.data.frame(theta_curve_r)
   ## Render & return
   ggplot2::ggplot() +
-    ggproto +
+    theme_spinifex() +
+    ggplot2::labs(x = NULL, y = NULL, color = NULL, shape = NULL, fill = NULL) +
+    ggplot2::coord_fixed(clip = "off") +
     ## Axes circle
     ggplot2::geom_path(
       data = circ_r,

@@ -11,9 +11,8 @@ view_manip_space(
   basis_label = abbreviate(row.names(basis), 3),
   manip_col = "blue",
   manip_sp_col = "red",
-  line_size = 1,
-  text_size = 5,
-  ggproto = list(theme_spinifex())
+  line_size = 0.6,
+  text_size = 4
 )
 }
 \arguments{
@@ -39,11 +38,6 @@ contributions of the basis. Defaults to 1.}
 
 \item{text_size}{The size of the text labels of the variable
 contributions of the basis. Defaults to 5.}
-
-\item{ggproto}{A list of ggplot2 function calls.
-Anything that would be "added" to ggplot(); in the case of applying a theme,
-\code{ggplot() + theme_bw()} becomes \code{ggproto = list(theme_bw())}.
-Intended for aesthetic ggplot2 functions (not geom_* family).}
 }
 \value{
 ggplot object of the basis.
@@ -54,14 +48,14 @@ the projection frame. Returns the corresponding table. Only works for 2d
 manual tours.
 }
 \examples{
+library(spinifex)
 dat_std <- scale_sd(wine[, 2:6])
-bas <- basis_pca(dat_std)
-mv <- manip_var_of(bas)
+bas     <- basis_pca(dat_std)
+mv      <- manip_var_of(bas)
 
 view_manip_space(basis = bas, manip_var = mv)
 
 view_manip_space(basis = bas, manip_var = mv,
                  tilt = 2/12 * pi, basis_label = paste0("MyNm", 1:ncol(dat_std)),
-                 manip_col = "purple", manip_sp_col = "orange", 
-                 ggproto = list(ggplot2::theme_void(), ggplot2::ggtitle("My title")))
+                 manip_col = "purple", manip_sp_col = "orange")
 }

@@ -76,17 +76,17 @@ array2df <- function(
   ## Condition handle basis labels.
   if(is.null(basis_label)){
     if(is.null(data) == FALSE){
-      basis_label <- abbreviate(colnames(data), 3L)
-    }else basis_label <- abbreviate(rownames(basis_array), 3L)
+      basis_label <- abbreviate(
+        gsub("[^[:alnum:]=]", "", colnames(data)), 3L)
+    }else basis_label <- abbreviate(
+      gsub("[^[:alnum:]=]", "", rownames(basis_array)), 3L)
     if(is.null(basis_label)) basis_label <- paste0("v", 1L:p)
   }
   
   ## Basis frames df
-  ##*duplicate first frame; does it help plotly anim?
-  #basis_frames <-cbind(basis_array[,, 1L], 1L)
   basis_frames <- NULL 
   .mute <- sapply(1L:n_frames, function(i){
-    basis_rows <- cbind(basis_array[,, i], i)#* + 1L)
+    basis_rows <- cbind(basis_array[,, i], i)
     basis_frames <<- rbind(basis_frames, basis_rows)
   })
   basis_frames <- as.data.frame(basis_frames)
@@ -105,15 +105,12 @@ array2df <- function(
         "array2df: Non-conformable matrices; data has ", ncol(data),
         " columns while basis has ", p, " rows."))
     data <- as.matrix(data)
-    ##*Duplicate first frame; see if it helps plotly.
-    #*.new_frame <- data %*% matrix(basis_array[,, 1L], p, d)
-    #*data_frames <- cbind(.new_frame, 1L) ## Init
     data_frames <- NULL
     .mute <- sapply(1L:n_frames, function(i){
       new_frame <- data %*% matrix(basis_array[,, i], p, d)
       if(do_center_frame)
         new_frame <- apply(new_frame, 2L, function(c){(c - mean(c))})
-      new_frame <- cbind(new_frame, i) #*+ 1L) ## Append frame number
+      new_frame <- cbind(new_frame, i)
       data_frames <<- rbind(data_frames, new_frame) ## Add rows to df
     })
     data_frames[, 1L:d] <- data_frames[, 1L:d] %>% scale_01()
@@ -125,7 +122,7 @@ array2df <- function(
       data_frames$tooltip <- rep_len(data_label, nrow(data_frames))
   }
   
-  ## Return, include data if it exists.
+  ## Return, include data if it exists
   if(exists("data_frames")){
     ret <- list(basis_frames = basis_frames, data_frames = data_frames)
   } else
@@ -186,12 +183,13 @@ map_relative <- function(
     xoff  <- xcenter
     yoff  <- ycenter
   } else if(position == "left"){
-    scale <- .4 * min(xdiff, ydiff)
-    xoff  <- -.7 * xdiff + xcenter
+    scale <- .3   * min(xdiff, ydiff)
+    ## .5 + scale coef will have the circle touch lower range
+    xoff  <- -.85 * xdiff + xcenter 
     yoff  <- ycenter
   } else if(position == "right"){
-    scale <- .4 * min(xdiff, ydiff)
-    xoff  <- .7 * xdiff + xcenter
+    scale <- .3  * min(xdiff, ydiff)
+    xoff  <- .85 * xdiff + xcenter
     yoff  <- ycenter
   } else if(position %in% c("top1d")){
     xscale <- .3 * xdiff
@@ -209,13 +207,13 @@ map_relative <- function(
     xoff   <- xcenter
     yoff   <- -1.8 * ydiff + ycenter
   } else if(position == "bottomleft"){
-    scale <- .25 * min(xdiff, ydiff)
+    scale <- .25  * min(xdiff, ydiff)
     xoff  <- -.25 * xdiff + xcenter
-    yoff  <- -.5 * ydiff + ycenter
+    yoff  <- -.5  * ydiff + ycenter
   } else if(position == "topright"){
     scale <- .25 * min(xdiff, ydiff)
     xoff  <- .25 * xdiff + xcenter
-    yoff  <- .5 * ydiff + ycenter
+    yoff  <- .5  * ydiff + ycenter
   } else if(position == "full"){
     scale <- .5 * min(xdiff, ydiff)
     xoff  <- xcenter
@@ -557,58 +555,6 @@ basis_half_circle <- function(data){
 }
 
 
-## UTILITY ----
-
-#' Set default color & fill for discrete variables
-#' 
-#' Masks ggplot2's default color/fill color palette for discrete variables.
-#' 
-#' @param ... Passes arguments to ggplot2::scale_colour/fill_brewer.
-#' @export
-scale_colour_discrete <- function(...){
-  ggplot2::scale_colour_brewer(..., palette = "Dark2")
-}
-#' @rdname scale_colour_discrete
-#' @export
-scale_fill_discrete <- function(...){
-  ggplot2::scale_fill_brewer(..., palette = "Dark2")
-}
-### continuous cases is not clear what you would have to do, 
-##### also see cheem::color_scale_of
-
-
-#' A ggplot2 theme suggested for linear projections with spinifex.
-#' The default theme in spinifex functions.
-#' 
-#' @param ... Optionally pass arguments to `ggplot2::theme()`.
-#' @seealso \code{\link[ggplot2:theme]{ggplot2::theme}} for all theme options.
-#' @export
-#' @import ggplot2
-#' @examples 
-#' theme_spinifex()
-#' 
-#' require("ggplot2")
-#' ggplot(mtcars, aes(wt, mpg, color = as.factor(cyl))) +
-#'   geom_point() + theme_spinifex()
-theme_spinifex <- function(...){
-  ## Color/fill discrete also masked to reduced warnings/messages
-  list(theme_minimal(),
-       theme(
-         axis.text        = element_blank(),
-         panel.grid.major = element_blank(),
-         panel.grid.minor = element_blank(),
-         legend.position  = "bottom",
-         legend.direction = "horizontal",             ## Levels within an aesthetic
-         legend.box       = "vertical",               ## Between aesthetics
-         legend.margin    = margin(0L, 0L, 0L, 0L),   ## Tighter legend margin
-         panel.spacing    = unit(4L, "points"),       ## Facet spacing
-         strip.background = element_rect(size = .6, color = "grey80"),
-         #strip.text       = element_text(
-         #  margin = margin(b = 0L, t = 0L)),          ## Tighter facet strips
-         ...)                                         ## Ellipsis trumps defaults
-  )
-}
-
 #' Suggest a manipulation variable.
 #' 
 #' Find the column number of the variable with the `rank`-ith largest 
@@ -710,11 +656,95 @@ save_history <- function(
   #### if tour_path is a grand tour, start isn't first frame, and dim match
   if(is.null(start) == FALSE)
     if(attr(tour_path, "name") == "grand" &
-       ret[,, 1L] != start &
-       dim(start) == dim(ret)[1L:2L])
+       #any(matrix(ret[,, 1L], ncol = 2) != start) & ## Check for same
+       all(dim(start) == dim(ret)[1L:2L]))
       ret <- array(c(start, ret), dim = dim(ret) + c(0L, 0L, 1L))
   
   ret
+}
+
+
+
+## UTILITY ----
+
+#' Set default color & fill for discrete variables
+#' 
+#' Masks ggplot2's default color/fill color palette for discrete variables.
+#' 
+#' @param ... Passes arguments to ggplot2::scale_colour/fill_brewer.
+#' @export
+scale_colour_discrete <- function(...){
+  ggplot2::scale_colour_brewer(..., palette = "Dark2")
+}
+#' @rdname scale_colour_discrete
+#' @export
+scale_fill_discrete <- function(...){
+  ggplot2::scale_fill_brewer(..., palette = "Dark2")
+}
+### continuous cases is not clear what you would have to do, 
+##### also see cheem::color_scale_of
+
+#' Theme spinifex
+#' 
+#' A ggplot2 theme suggested for linear projections with spinifex.
+#' The default theme in spinifex functions.
+#' 
+#' @param ... Optionally pass arguments to `ggplot2::theme()`.
+#' @seealso \code{\link[ggplot2:theme]{ggplot2::theme}} for all theme options.
+#' @export
+#' @import ggplot2
+#' @examples 
+#' theme_spinifex()
+#' 
+#' require("ggplot2")
+#' ggplot(mtcars, aes(wt, mpg, color = as.factor(cyl))) +
+#'   geom_point() + theme_spinifex()
+theme_spinifex <- function(...){
+  ## Color/fill discrete also masked to reduced warnings/messages
+  list(
+    theme_minimal(),
+    theme(
+      axis.text        = element_blank(),
+      panel.grid.major = element_blank(),
+      panel.grid.minor = element_blank(),
+      legend.position  = "bottom",
+      legend.direction = "horizontal",        ## Levels within an aesthetic
+      legend.box       = "vertical",          ## Between aesthetics
+      legend.margin    = margin(0L,0L,0L,0L), ## Tighter legend margin
+      panel.spacing    = unit(0L, "points"),  ## Facet spacing
+      strip.text       = element_text(        ## Facet strip spacing
+        margin = margin(b = 3L, t = 3L)),
+      strip.background =                      ## Facet strip
+        element_rect(size = .4, color = "grey20", fill = "grey90"),
+      ...)                                    ## Ellipsis trumps defaults
+  )
+}
+
+
+#' Check ggplot layers for use of a specific geom
+#' 
+#' Checks if any of the layers of a ggplot contain a specific class.
+#' 
+#' @param ggplot Check the layers of this ggplot object
+#' @param class_nm The class name to check, note this differs slightly from
+#' the name of the geom function. Defaults to "GeomDensity", checking to see if
+#' geom_density was used in any of the layers.
+#' @seealso \code{\link[ggplot2:theme]{ggplot2::theme}} for all theme options.
+#' @export
+#' @examples 
+#' library(ggplot2)
+#' library(spinifex)
+#' 
+#' g <- ggplot(mtcars, aes(disp, color = factor(cyl))) + 
+#'   geom_density() + geom_histogram()
+#' is_any_layer_class(g, "GeomDensity")
+#' is_any_layer_class(g, "GeomPoint")
+is_any_layer_class <- function(ggplot, class_nm = "GeomDensity"){
+  any(
+    sapply(seq_along(ggplot$layers), function(i){
+      class_nm %in% class(ggplot$layers[[i]]$geom)
+    })
+  )
 }
 
 

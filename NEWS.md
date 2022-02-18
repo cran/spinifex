@@ -1,16 +1,33 @@
+# spinifex v0.3.4
+
+- Cleaned up both vignettes; include plotly output & removed scroll bars from wide code chunks
+- Removed forced garbage collection `gc()` calls, too expensive for the minor issues it tried to mitigate
+- `proto_density()` now changes the aspect ratio to 1/2 (y/x), twice as wide
+- `animate_plotly()` will change the x scaleratio to 2 (for non `plotly::subplot` animations)
+- Changed defaults to `map_relative()`; position = "left" or "right" is fully off outside of the data and slightly smaller
+- Adjust text-related `proto_*()` default; decreasing the text size (5 -> 4) 
+- Adjust line segment-related `proto_*()` default; decreasing the line size a (1 -> .6)
+- Adjust `filmstrip & facet_wrap_tour()`: adds theme for borders to help distinguish facets
+- Adjust `theme_spinifex()` to include shading and strip outline consistent with the above point
+
+
 # spinifex v0.3.3
-- Add do_center_frame = TRUE argument to ggtour, such that tours don't want too far to the sides as they were in cheem radial tours.
-- Adjust theme_spinifex(): tightening margins, facet strip outlines, and better separating theme elements from ggtour default settings.
+
+- Add do_center_frame = TRUE argument to `ggtour()`, such that tours don't want too far to the sides as they were in cheem radial tours
+- Adjust `theme_spinifex()`: tightening margins, facet strip outlines, and better separating theme elements from ggtour default settings
+
 
 # spinifex v0.3.2
-- New function: `facet_wrap_tour()`, for faceting tours!
-- New function: `proto_frame_cor2()`, adds text for the within-frame correlation squared.
-- New function: `append_fixed_y()`, add/overwrite data y column to fixed values, such as for the height of predicted values or residuals of a model.
-- New function: `draw_basis()` static ggplot2 variant of `proto_basis`, that accepts a basis directly without requiring ggtour initialization.
-- Most data-oriented `proto_*` functions have `row_index` argument; allowing for subsetting that is compatible with faceting and appending a fixed y! By default, `proto_point()` will plot non-selected points in faint grey, behind selected points.
-- `theme_spinifex()` changed removing the duplicate legend display, fewer warnings, and less frame oddities (geom existence issues) with `animate_plotly`.
-- Better examples for setting dimensions, resolution, and renders in `animate_*` functions.
-- Refreshed readme.
+
+- New function: `facet_wrap_tour()`, for faceting tours
+- New function: `proto_frame_cor2()`, adds text for the within-frame correlation squared
+- New function: `append_fixed_y()`, add/overwrite data y column to fixed values, such as for the height of predicted values or residuals of a model
+- New function: `draw_basis()` static ggplot2 variant of `proto_basis`, that accepts a basis directly without requiring ggtour initialization
+- Most data-oriented `proto_*` functions have `row_index` argument; allowing for subsetting that is compatible with faceting and appending a fixed y! By default, `proto_point()` will plot non-selected points in faint grey, behind selected points
+- `theme_spinifex()` changed removing the duplicate legend display, fewer warnings, and less frame oddities (geom existence issues) with `animate_plotly`
+- Better examples for setting dimensions, resolution, and renders in `animate_*` functions
+- Refreshed readme
+
 
 # spinifex v0.3.1
 
@@ -19,7 +36,7 @@
 - `manual_tour()` and related functions now handle 1D projections
 - New functions: `proto_highlight/1d()` for highlighting specific points in ggtours
 - New function: `filmstrip()`, creates a ggplot faceting the frames of a ggtour for a static output
-- New dataset: `penguins`, from `palmerpenguins::penguins`, removed NA
+- New dataset: `penguins_na.rm`, from `palmerpenguins::penguins`, removed NA
 rows & reordered columns
 - Added argument `rownum_index` to `proto_text`, for labeling subsets
 - Experimental wrapper function `spinifex::save_history`, muting the noisy execution of `tourr::save_history`
@@ -35,7 +52,7 @@ basis/1d, point, origin/1d, density, text, hex, default/1d.
 - New vignette demonstrating this api `vignette("ggproto_api", "spinifex")`
 - Shiny app now imports .csv & .rds,  code improved, uses new ggproto api
 -- `run
-- Fixed a format issue with the `BeastCancer` dataset
+- Fixed a format issue with the `BeastCancer_na.rm` dataset
 
 
 # spinifex v0.2.8
@@ -52,7 +69,7 @@ Basis_* functions to find features of interest, powered by `{Rdimtools}`.
 New util functions:
 - `scale_sd()` center and scale each variable by it's standard deviation
 - `scale_01()` center and scale each variable to be between [0, 1]
-- `basis_half_circle()`, variable agnostic basis with minimal variable dependence.
+- `basis_half_circle()`, variable agnostic basis with minimal variable dependence
 - `as_history_array()`, coerces an array of bases into the same attributes and class as returns of `tourr::save_history()`
 
 

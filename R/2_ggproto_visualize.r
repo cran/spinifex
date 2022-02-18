@@ -86,8 +86,10 @@ ggtour <- function(
   ## Basis label condition handling
   if(is.null(basis_label)){
     if(is.null(data) == FALSE){
-      basis_label <- abbreviate(colnames(data), 3L)
-    }else basis_label <- abbreviate(rownames(basis_array), 3L)
+      basis_label <- abbreviate(
+        gsub("[^[:alnum:]=]", "", colnames(data), 3L))
+    }else basis_label <- abbreviate(
+      gsub("[^[:alnum:]=]", "", rownames(basis_array), 3L))
     if(length(basis_label) == 0L) basis_label <- paste0("v", 1L:nrow(basis_array))
   }
   ## Data label condition handling
@@ -116,13 +118,13 @@ ggtour <- function(
     .interpolated_basis_array, data, basis_label, data_label, do_center_frame)
   .df_basis <- .df_ls$basis_frames
   attr(.df_basis, "manip_var") <- .manip_var ## NULL if not a manual tour
-  .n_frames <- dim(.interpolated_basis_array)[3L]# + 1L ## Duplicate first frame
-  .d <- ncol(.interpolated_basis_array)
-  .p <- nrow(.interpolated_basis_array)
-  .map_to <- data.frame(x = c(0L, 1L), y = c(0L, 1L))
-  .df_data <- .df_ls$data_frames ## Can be NULL
+  .n_frames     <- dim(.interpolated_basis_array)[3L]
+  .d            <- ncol(.interpolated_basis_array)
+  .p            <- nrow(.interpolated_basis_array)
+  .map_to       <- data.frame(x = c(0L, 1L), y = c(0L, 1L))
+  .df_data      <- .df_ls$data_frames ## Can be NULL
   .nrow_df_data <- nrow(.df_data) ## NULL if data is NULL
-  .n <- nrow(data) ## NULL if data is NULL
+  .n            <- nrow(data) ## NULL if data is NULL
   
   ## SIDE EFFECT: Assign list to last_ggtour_env().
   .set_last_ggtour_env(list(
@@ -182,7 +184,7 @@ facet_wrap_tour <- function(
       .df_data <- .bind_elements2df(
         list(facet_var = rep_len(facet_var, .nrow_df_data)), .df_data)
     ## "_basis_" becomes an honorary level of facet_var
-    .df_basis <- .bind_elements2df(list(facet_var = "_basis_"), .df_basis)
+    .df_basis  <- .bind_elements2df(list(facet_var = "_basis_"), .df_basis)
   }
   
   ## SIDE EFFECT:
@@ -197,9 +199,9 @@ facet_wrap_tour <- function(
   list(
     ggplot2::facet_wrap(facets = ggplot2::vars(facet_var),
                         nrow = nrow, ncol = ncol, dir = dir),
-    ggplot2::theme(strip.text = ggplot2::element_text(
-      margin = ggplot2::margin(b = 0L, t = 0L)),  ## tighter facet labels
-      panel.spacing = ggplot2::unit(0L, "lines")) ## tighter facet spacing
+    ggplot2::theme( ## Note; strip spacing and position in theme_spinifex()
+      ## Border introduced only with facet. 
+      panel.border = element_rect(size = .4, color = "grey20", fill = NA))
   )
 }
 
@@ -250,9 +252,9 @@ append_fixed_y <- function(
   
   ## SIDE EFFECT: pass data back to .store
   # to calm some oddities; like proto_origin() complaining about y being missing
-  .ggt$df_data <- .df_data
+  .ggt$df_data  <- .df_data
   .ggt$map_to$y <- range(.df_data$y)
-  .ggt$d <- 2L
+  .ggt$d        <- 2L
   .set_last_ggtour_env(.ggt)
   
   ## Return
@@ -425,7 +427,6 @@ last_ggtour_env <- function(){.store$ggtour_ls}
   if(exists("identity_args"))
     if(length(identity_args) > 0L)
       identity_args <- spinifex:::.lapply_rep_len(identity_args, .nrow_df_data, .n)
-  .m <- gc() ## Mute garbage collection
 })
 
 ### ANIMATE_* ------
@@ -508,13 +509,9 @@ animate_gganimate <- function(
   ## Discrete jump between frames, no linear interpolation.
   gga <- ggtour + gganimate::transition_states(frame, transition_length = 0L)
   ## Normal animation, with applied options, knit_pdf_anim == FALSE
-  ret <- gganimate::animate(gga, fps = fps, rewind = rewind, 
-                            start_pause = fps * start_pause,
-                            end_pause = fps * end_pause, ...)
-  
-  ## Clean up
-  .m <- gc() ## Mute garbage collection
-  ret
+  gganimate::animate(gga, fps = fps, rewind = rewind, 
+                     start_pause = fps * start_pause,
+                     end_pause = fps * end_pause, ...)
 }
 
 
@@ -561,20 +558,25 @@ animate_plotly <- function(
   fps = 8,
   ... ## Passed to plotly::ggplotly(). can always call layout/config again
 ){
-  ## ggplot or plotly::subplot?
   if(class(ggtour)[1L] == "gg"){
+    ## If ggplot
+    if(length(ggtour$layers) == 0L) ## plotly subplots, have NULL layers
+      stop("No layers found, did you forget to add a proto_*?")
     ## Frame asymmetry issue: https://github.com/ropensci/plotly/issues/1696
     #### Adding many protos is liable to break plotly animations, see above url.
     ggtour <- ggtour + ggplot2::theme(
-      ## Circumvent plotly warnings
-      legend.direction = "vertical", ## horizontal legenda not supported
+      ## Avoid plotly warnings
+      legend.direction = "vertical", ## horizontal legends not supported
       aspect.ratio     = NULL)       ## aspect.ratio not supported
-    ## Assumptions
-    if(length(ggtour$layers) == 0L) ## plotly subplots, have NULL layers
-      stop("No layers found, did you forget to add a proto_*?")
     ## ggplotly without animation settings
     ggp <- plotly::ggplotly(ggtour, tooltip = "tooltip", ...)
-  }else ggp <- ggtour ## plotly::subplot
+    ## If density used widen
+    if(is_any_layer_class(ggtour, class_nm = "GeomDensity"))
+      #<add plotly aspect ratio to ggp>
+      ggp <- plotly::layout(
+        ggp, xaxis = list(scaleratio = 2)) ## 2x width
+    ## else plotly::subplot
+  }else ggp <- ggtour
   
   ## ggplotly settings, animated or static from ggplot or subplot
   ggp <- ggp %>%
@@ -583,10 +585,10 @@ animate_plotly <- function(
                    modeBarButtonsToRemove = c("zoomIn2d", "zoomOut2d")) %>%
     ## Remove legends and axis lines
     plotly::layout(dragmode = FALSE, legend = list(x = 100L, y = 0.5),
-                   #fixedrange = TRUE, ## This is a curse, never use this.
+                   #fixedrange = TRUE, ## This is a curse, never use it.
                    yaxis = list(showgrid = FALSE, showline = FALSE),
-                   xaxis = list(showgrid = FALSE, showline = FALSE,
-                                scaleanchor = "y", scalaratio = 1L))
+                   xaxis = list(showgrid = FALSE, showline = FALSE))
+                                #scaleanchor = "y", scalaratio = 1L
   
   ## Multiple frames/animation condition handling
   n_frames <- last_ggtour_env()$n_frames
@@ -604,8 +606,6 @@ animate_plotly <- function(
         active = 0L, ## 0 indexed first frame
         currentvalue = list(prefix = "Frame: ", font = list(color = "black")))
   }
-  ## Clean up
-  .m <- gc() ## Mute garbage collection
   ret
 }
   
@@ -690,18 +690,18 @@ animate_plotly <- function(
 #' ## d = 1 case & specify facet dim
 #' bas1d     <- basis_pca(dat, d = 1)
 #' mt_path1d <- manual_tour(basis = bas1d, manip_var = mv)
-#' ggt1d <- ggtour(mt_path1d, dat, angle = 10) +
-#'   proto_default1d(aes_args = list(fill = clas))
+#' ggt1d <- ggtour(mt_path1d, dat, angle = 99) +
+#'   proto_default1d(aes_args = list(fill = clas, color = clas))
 #' filmstrip(ggt1d, nrow = 12, ncol = 3)
 filmstrip <- function(
   ggtour, ...
 ){
-  ret <- ggtour +
+  ggtour +
     ## Display level of previous facet (if applicable) next level of frame.
-    ggplot2::facet_wrap(c("frame", names(ggtour$facet$params$facets)), ...)
-  ## filmstrip does NOT clear last tour
-  .m <- gc() ## Mute garbage collection
-  ret
+    ggplot2::facet_wrap(c("frame", names(ggtour$facet$params$facets)), ...) +
+    ggplot2::theme( ## Note; strip spacing and position in theme_spinifex()
+      ## Border introduced only with facet.
+      panel.border = element_rect(size = .4, color = "grey20", fill = NA))
 }
 
 
@@ -719,8 +719,8 @@ filmstrip <- function(
 #' @param manip_col The color to highlight the manipulation variable with. Not
 #' applied if the tour isn't a manual tour. Defaults to "blue".
 #' @param line_size (2D bases only) the thickness of the lines used to make the 
-#' axes and unit circle. Defaults to 1.
-#' @param text_size Size of the text label of the variables.
+#' axes and unit circle. Defaults to .6.
+#' @param text_size Size of the text label of the variables. Defaults to 4.
 #' @export
 #' @aliases proto_basis
 #' @family ggtour proto functions
@@ -766,34 +766,34 @@ filmstrip <- function(
 #'   proto_basis1d(position = "bottom",
 #'                 manip_col = "pink",
 #'                 segment_size = 3,
-#'                 text_size = 5)
+#'                 text_size = 6)
 #' \dontrun{
 #' animate_plotly(ggt1d)
 #' }
 proto_basis <- function(
-  position = c("left", "center", "right", "bottomleft", "topright", "full", "off"),
+  position  = c("left", "center", "right", "bottomleft", "topright", "full", "off"),
   manip_col = "blue",
-  line_size = 1,
-  text_size = 5
+  line_size = .6,
+  text_size = 4
 ){
   ## Initialize
   eval(.init4proto)
   if(is.null(.df_basis$y))
     stop("proto_basis: Basis `y` not found, expected a 2D tour. Did you mean to call `proto_basis1d`?")
-  position = match.arg(position)
+  position <- match.arg(position)
   if(position == "off") return()
   
   ## Setup and transform
   .angles <- seq(0L, 2L * pi, length = 360L)
   .circle <- data.frame(x = cos(.angles), y = sin(.angles))
   if(.is_faceted){
-    position = "full"
-    .circle <- .bind_elements2df(list(facet_var = "_basis_"), .circle)
+    position <- "full"
+    .circle  <- .bind_elements2df(list(facet_var = "_basis_"), .circle)
   }
   ## Scale to data
-  .center   <- map_relative(data.frame(x = 0L, y = 0L), position, .map_to)
-  .circle   <- map_relative(.circle, position, .map_to)
-  .df_basis <- map_relative(.df_basis, position, .map_to)
+  .center    <- map_relative(data.frame(x = 0L, y = 0L), position, .map_to)
+  .circle    <- map_relative(.circle, position, .map_to)
+  .df_basis  <- map_relative(.df_basis, position, .map_to)
   
   ## Aesthetics for the axes segments.
   .axes_col <- "grey50"
@@ -821,9 +821,10 @@ proto_basis <- function(
     suppressWarnings(ggplot2::geom_text(
       data = .df_basis,
       color = .axes_col, size = text_size,
-      vjust = "outward", hjust = "outward",
-      mapping = ggplot2::aes(x = x, y = y, frame = frame, label = tooltip)
-    )))
+      mapping = ggplot2::aes(x = x, y = y, frame = frame, label = tooltip,
+                             vjust = "outward", hjust = "inward")
+    ))
+  )
 }
 
 
@@ -835,11 +836,11 @@ proto_basis1d <- function(
   position = c("bottom1d", "floor1d",  "top1d", "full", "off"),
   manip_col = "blue",
   segment_size = 2,
-  text_size = 5
+  text_size = 4
 ){
   ## Initialize
   eval(.init4proto)
-  position = match.arg(position)
+  position <- match.arg(position)
   if(position == "off") return()
   
   ## Aesthetics for the axes segments
@@ -861,18 +862,18 @@ proto_basis1d <- function(
                          y = rep(.p:1L, .n_frames) / .p,
                          frame = .df_basis$frame,
                          tooltip = .df_basis$tooltip)
-  .df_txt <- data.frame(x = -1.2, y = .p:1L/.p, 
-                        tooltip = .df_basis[.df_basis$frame == 1L, "tooltip"])
+  .df_txt  <- data.frame(x = -1.05, y = .p:1L/.p,
+                         tooltip = .df_basis[.df_basis$frame == 1L, "tooltip"])
   .df_rect <- data.frame(x = c(-1L, 1L), y = c(.5, .p + .5) / .p)
   .df_seg0 <- data.frame(x = 0L, y = c(.5, .p + .5) / .p)
   if(.is_faceted){
-    position = "floor1d"
+    position   <- "floor1d"
     .facet_var <- list(facet_var = "_basis_")
-    .df_zero <- .bind_elements2df(.facet_var, .df_zero)
-    .df_seg  <- .bind_elements2df(.facet_var, .df_seg)
-    .df_txt  <- .bind_elements2df(.facet_var, .df_txt)
-    .df_rect <- .bind_elements2df(.facet_var, .df_rect)
-    .df_seg0 <- .bind_elements2df(.facet_var, .df_seg0)
+    .df_zero   <- .bind_elements2df(.facet_var, .df_zero)
+    .df_seg    <- .bind_elements2df(.facet_var, .df_seg)
+    .df_txt    <- .bind_elements2df(.facet_var, .df_txt)
+    .df_rect   <- .bind_elements2df(.facet_var, .df_rect)
+    .df_seg0   <- .bind_elements2df(.facet_var, .df_seg0)
   }
   ## Scale them
   .df_zero <- map_relative(.df_zero, position, .map_to)
@@ -921,8 +922,8 @@ proto_basis1d <- function(
 #' @param manip_col The color to highlight the manipulation variable with. Not
 #' applied if the tour isn't a manual tour. Defaults to "blue".
 #' @param line_size (2D bases only) the thickness of the lines used to make the 
-#' axes and unit circle. Defaults to 1.
-#' @param text_size Size of the text label of the variables.
+#' axes and unit circle. Defaults to 0.6.
+#' @param text_size Size of the text label of the variables. Defaults to 4.
 #' @param basis_label The text labels of the data variables. 
 #' Defaults to the 3 character abbreviation of the rownames of the basis.
 #' @export
@@ -953,14 +954,14 @@ draw_basis <- function(
   map_to = data.frame(x = c(0, 1), y = c(0, 1)),
   position = c("left", "center", "right", "bottomleft", "topright", "off"),
   manip_col = "blue",
-  line_size = 1,
-  text_size = 5,
-  basis_label = abbreviate(rownames(basis), 3L)
+  line_size = .6,
+  text_size = 4,
+  basis_label = abbreviate(gsub("[^[:alnum:]=]", "", rownames(basis), 3L))
 ){
   ## Initialize
   d <- ncol(basis)
   if(d < 2L) stop("draw_basis: expects a basis of 2 or more columns.")
-  position = match.arg(position)
+  position <- match.arg(position)
   if(position == "off") return()
   
   ## Setup and transform
@@ -980,7 +981,7 @@ draw_basis <- function(
   colnames(.df_basis)[1L:2L] <- c("x", "y")
   
   if(is.null(.df_basis$tooltip)){
-    tooltip <- abbreviate(rownames(basis), 3L)
+    tooltip <- abbreviate(gsub("[^[:alnum:]=]", "", rownames(basis), 3L))
     if(is.null(tooltip)) tooltip <- paste0("v", 1L:nrow(basis))
     .df_basis$tooltip <- tooltip
   }
@@ -1004,14 +1005,12 @@ draw_basis <- function(
                        size = line_size, inherit.aes = FALSE,
                        mapping = ggplot2::aes(x = x, y = y)),
     suppressWarnings(ggplot2::geom_segment( ## Suppress unused arg: frames
-      data = .df_basis,
-      size = .axes_siz, color = .axes_col,
+      data = .df_basis, color = .axes_col, size = .axes_siz,
       mapping = ggplot2::aes(
         x = x, y = y, xend = .center$x, yend = .center$y)
     )),
     suppressWarnings(ggplot2::geom_text(
-      data = .df_basis,
-      color = .axes_col, size = text_size,
+      data = .df_basis, color = .axes_col, size = text_size,
       vjust = "outward", hjust = "outward",
       mapping = ggplot2::aes(x = x, y = y, label = basis_label)
     ))
@@ -1181,7 +1180,8 @@ proto_density <- function(
   ret <- list(do.call(.geom_func, identity_args),
               ggplot2::theme(legend.position  = "right",
                              legend.direction = "vertical",
-                             legend.box       = "vertical"))
+                             legend.box       = "vertical",
+                             aspect.ratio     = 1L / 2L)) ## y/x, 2x width
   
   ## geom_rug do.call
   if(is.null(rug_shape) == FALSE){
@@ -1301,9 +1301,10 @@ proto_density2d <- function(
 #' \dontrun{
 #' animate_plotly(ggt2)
 #' }
-proto_text <- function(aes_args = list(),
-                       identity_args = list(nudge_x = 0.05),
-                       row_index = TRUE
+proto_text <- function(
+  aes_args = list(vjust = "outward", hjust = "outward"),
+  identity_args = list(nudge_x = 0.05),
+  row_index = TRUE
 ){
   ## Initialize
   eval(.init4proto)
