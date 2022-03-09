@@ -61,7 +61,7 @@ data.frame(
 #  
 #  ## Manual tour, manipulating the contribution of a selected variable
 #  bas     <- basis_pca(dat)    ## Start basis
-#  mv      <- manip_var_of(bas) ## Number of the variable to manipulate
+#  mv      <- 1 ## Number of the variable to manipulate
 #  mt_path <- manual_tour(bas, manip_var = mv) ## Tour path
 #  
 #  ## Create a static ggplot2 plot with all frames of the tour
@@ -83,7 +83,7 @@ if(FALSE){
   dat  <- scale_sd(penguins_na.rm[, 1:4])
   clas <- penguins_na.rm$species
   bas     <- basis_pca(dat)    ## Start basis
-  mv      <- manip_var_of(bas) ## Number of the variable to manipulate
+  mv      <- 1 ## Number of the variable to manipulate
   mt_path <- manual_tour(bas, manip_var = mv) ## Tour path
   ggt <- ggtour(mt_path, dat, angle = .2) +
     proto_basis() +
@@ -92,7 +92,8 @@ if(FALSE){
   anim <- animate_gganimate(ggt, height = 3, width = 4.5, units = "in", res = 150)
   gganimate::anim_save("proto_mt_penguins.gif", animation = anim, path = "./vignettes")
 }
-knitr::include_graphics("./proto_mt_penguins.gif")
+#knitr::include_graphics("./proto_mt_penguins.gif")
+#knitr::include_url("https://github.com/nspyrison/spinifex/blob/master/vignettes/proto_mt_penguins.gif?raw=true")
 
 ## ---- eval=FALSE--------------------------------------------------------------
 #  ## Save a grand tour basis path, projecting through randomly selected bases
@@ -119,7 +120,8 @@ if(FALSE){
   anim <- animate_gganimate(ggt, height = 2, width = 4.5, units = "in", res = 150)
   gganimate::anim_save("proto_gt_penguins.gif", animation = anim, path = "./vignettes")
 }
-knitr::include_graphics("./proto_gt_penguins.gif")
+#knitr::include_graphics("./proto_gt_penguins.gif")
+#knitr::include_url("https://github.com/nspyrison/spinifex/blob/master/vignettes/proto_guided1d_penguins.gif?raw=true")
 
 ## ---- eval=FALSE--------------------------------------------------------------
 #  ## (Quietly create) a 1d guided tour, optimizing the projection space for the holes() function
@@ -146,15 +148,16 @@ if(FALSE){
   gganimate::anim_save(
     "proto_guided1d_penguins.gif", animation = anim, path = "./vignettes")
 }
-knitr::include_graphics("./proto_guided1d_penguins.gif")
+#knitr::include_graphics("./proto_guided1d_penguins.gif")
+#knitr::include_url("https://github.com/nspyrison/spinifex/blob/master/vignettes/proto_guided1d_penguins.gif?raw=true")
 
 ## ---- eval=FALSE--------------------------------------------------------------
 #  ggt <- ggt +
 #    theme_bw() +
-#    ggtitle("My Tour animation") +
-#    labs(x = "Projection Y1", y = "density")
+#    ggtitle("My Tour Animation") +
+#    labs(x = "Y1", y = "Density")
 #  
-#  animate_gganimate(ggt, height = 2, width = 4.5, units = "in", res = 150)
+#  animate_gganimate(ggt, height = 2, width = 3, units = "in", res = 150)
 #  ## Or as a plotly html widget
 #  #animate_plotly(ggt)
 
@@ -164,45 +167,42 @@ if(FALSE){
   ggt <- ggt +
     theme_bw() +
     ggtitle("My Tour animation") +
-    labs(x = "Projection Y1", y = "density")
+    labs(x = "Y1", y = "density")
   
-  anim <- animate_gganimate(ggt, height = 2, width = 4.5, units = "in", res = 150)
+  anim <- animate_gganimate(ggt, height = 4, width = 4, units = "in", res = 150)
   gganimate::anim_save(
     "proto_guided1d_interop_penguins.gif", animation = anim, path = "./vignettes")
 }
-knitr::include_graphics("./proto_guided1d_interop_penguins.gif")
+#knitr::include_graphics("./proto_guided1d_interop_penguins.gif")
+#knitr::include_url("https://github.com/nspyrison/spinifex/blob/master/vignettes/proto_guided1d_interop_penguins.gif?raw=true")
 
 ## ---- eval=FALSE--------------------------------------------------------------
-#  dat     <- scale_sd(PimaIndiansDiabetes_wide[, -9])
-#  clas    <- PimaIndiansDiabetes_wide$diabetes
 #  gt_path <- save_history(dat, max = 7)
-#  
 #  ggt <- ggtour(gt_path, dat, angle = .3) +
 #    facet_wrap_tour(facet_var = clas, nrow = 1) +
 #    proto_point(list(color = clas, shape = clas)) +
 #    proto_basis(position = "center") +
 #    proto_origin()
 #  
-#  animate_gganimate(ggt, height = 2, width = 4.5, units = "in", res = 150)
+#  animate_gganimate(ggt, height = 2, width = 6, units = "in", res = 150)
 #  ## Or as a plotly html widget
 #  #animate_plotly(ggt)
 
 ## ---- echo=FALSE, out.width="100%"--------------------------------------------
 ## Cut down sub-directory size, making animations to gif and including those.
 if(FALSE){
-  dat     <- scale_sd(PimaIndiansDiabetes_wide[, -9])
-  clas    <- PimaIndiansDiabetes_wide$diabetes
   gt_path <- save_history(dat, max = 7)
   ggt     <- ggtour(gt_path, dat, angle = .3) +
     facet_wrap_tour(facet_var = clas, nrow = 1) +
     proto_point(list(color = clas, shape = clas)) +
     proto_basis(position = "center") +
     proto_origin()
-  anim <- animate_gganimate(ggt, height = 2, width = 4.5, units = "in", res = 150)
+  anim <- animate_gganimate(ggt, height = 2, width = 6, units = "in", res = 150)
   gganimate::anim_save(
     "proto_facet_penguins.gif", animation = anim, path = "./vignettes")
 }
-knitr::include_graphics("./proto_facet_penguins.gif")
+#knitr::include_graphics("./proto_facet_penguins.gif")
+#knitr::include_url("https://github.com/nspyrison/spinifex/blob/master/vignettes/proto_facet_penguins.gif?raw=true")
 
 ## ---- echo = FALSE------------------------------------------------------------
 data.frame(
@@ -211,7 +211,6 @@ data.frame(
   `related ggplot2 function` =
     c("ggplot", "geom_point", "geom_text", "geom_hex", "NA", "geom- _density & _rect", "geom- _segment & _text", "several protos", "plotly::ggplotly (with animation)", "gganimate::animate"),
   detail =
-    c("Also perfroms setup for the tour.", "-", "-", "Heatmap hexegons, for high observation density", "Line segments for the origin, the space where 0 values project to", "1D density with run hash marks underneath, `position = 'stack'` not working with plotly.", "html widget, row numbers added as tooltip on hover. plotly doesn't presicly map all ggplot2 settings; legends, point size and opacity may vary.", "Direction and magnetude of variables to the projection disp~", "Default protos for 2/1D tours", "gif, mp4 and other video animation. gganimate consumes native ggplots and aestheics should be consistant."), check.names = F
-) %>%
+    c("Also perfroms setup for the tour.", "-", "-", "Heatmap hexegons, for high observation density", "Line segments for the origin, the space where 0 values project to", "1D density with run hash marks underneath, `position = 'stack'` not working with plotly.", "html widget, row numbers added as tooltip on hover. plotly doesn't presicly map all ggplot2 settings; legends, point size and opacity may vary.", "Direction and magnetude of variables to the projection disp~", "Default protos for 2/1D tours", "gif, mp4 and other video animation. gganimate consumes native ggplots and aestheics should be consistant."), check.names = F) %>%
   knitr::kable()
 

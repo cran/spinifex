@@ -160,6 +160,11 @@ interoperable
 orthogonal
 scaleratio
 unlinked
+FOSS
+repo
+dontrun's
+donttest's
+roxygen
 
 
 ## Last line needs to be blank

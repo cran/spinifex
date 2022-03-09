@@ -64,7 +64,8 @@ if(FALSE){
                             height = 3, width = 4.5, units = "in", res = 150)
   gganimate::anim_save("mt_penguins.gif", animation = anim, path = "./vignettes")
 }
-knitr::include_graphics("./mt_penguins.gif")
+#knitr::include_graphics("./mt_penguins.gif")
+#knitr::include_url("https://github.com/nspyrison/spinifex/blob/master/vignettes/mt_penguins.gif?raw=true")
 
 ## ---- echo=F------------------------------------------------------------------
 nasa <- select(GGally::nasa, lat, long, day, surftemp)
@@ -139,7 +140,8 @@ if(FALSE){
     ggt, height = 3, width = 4.5, units = "in", res = 150)
   gganimate::anim_save("gt_penguins.gif", animation = anim, path = "./vignettes")
 }
-knitr::include_graphics("./gt_penguins.gif")
+#knitr::include_graphics("./gt_penguins.gif")
+#knitr::include_url("https://github.com/nspyrison/spinifex/blob/master/vignettes/gt_penguins.gif?raw=true")
 
 ## -----------------------------------------------------------------------------
 ## Save only the final holes frame
@@ -181,5 +183,6 @@ if(FALSE){
     ggtour = my_ggtour, height = 3, width = 4.5, units = "in", res = 150)
   gganimate::anim_save("holes_penguins.gif", animation = anim, path = "./vignettes")
 }
-knitr::include_graphics("./holes_penguins.gif")
+#knitr::include_graphics("./holes_penguins.gif")
+#knitr::include_url("https://github.com/nspyrison/spinifex/blob/master/vignettes/holes_penguins.gif?raw=true")
 
