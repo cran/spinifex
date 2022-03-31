@@ -1,7 +1,7 @@
 Package: spinifex
 Title: Manual Tours, Manual Control of Dynamic Projections of Numeric
         Multivariate Data
-Version: 0.3.5
+Version: 0.3.6
 Authors@R: c(
   person("Nicholas", "Spyrison", role = c("aut", "cre"),
     email = "spyrison@gmail.com",
@@ -34,9 +34,9 @@ LazyData: true
 RoxygenNote: 7.1.2
 Language: en-US
 NeedsCompilation: no
-Packaged: 2022-03-09 02:19:49 UTC; spyri
+Packaged: 2022-03-31 06:41:15 UTC; spyri
 Author: Nicholas Spyrison [aut, cre] (<https://orcid.org/0000-0002-8417-0212>),
   Dianne Cook [aut, ths] (<https://orcid.org/0000-0002-3813-7155>)
 Maintainer: Nicholas Spyrison <spyrison@gmail.com>
 Repository: CRAN
-Date/Publication: 2022-03-09 09:10:02 UTC
+Date/Publication: 2022-03-31 08:30:02 UTC
