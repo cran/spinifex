@@ -71,7 +71,7 @@ animate_plotly(ggt2)
 
 ## 1D case:
 bas1d     <- basis_pca(dat, d = 1)
-mv        <- manip_var_of(bas, 3)
+mv        <- manip_var_of(bas1d, 3)
 mt_path1d <- manual_tour(bas1d, manip_var = mv)
 
 ggt1d <- ggtour(mt_path1d, dat, angle = .3) +
@@ -99,8 +99,8 @@ Other ggtour proto functions:
 \code{\link{facet_wrap_tour}()},
 \code{\link{ggtour}()},
 \code{\link{proto_default}()},
-\code{\link{proto_density2d}()},
 \code{\link{proto_density}()},
+\code{\link{proto_density2d}()},
 \code{\link{proto_hex}()},
 \code{\link{proto_highlight}()},
 \code{\link{proto_hline0}()},

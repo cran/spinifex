@@ -171,7 +171,7 @@ ggtour <- function(
 #'   facet_wrap_tour(facet_var = clas, ncol = 2, nrow = 2) +
 #'   proto_default(aes_args = list(color = clas, shape = clas),
 #'                 identity_args = list(size = 1.5))
-#' \donttest{
+#' \dontrun{
 #' animate_gganimate(ggt) ## May not always play well with plotly
 #' }
 facet_wrap_tour <- function(
@@ -201,7 +201,7 @@ facet_wrap_tour <- function(
                         nrow = nrow, ncol = ncol, dir = dir),
     ggplot2::theme( ## Note; strip spacing and position in theme_spinifex()
       ## Border introduced only with facet. 
-      panel.border = element_rect(size = .4, color = "grey20", fill = NA))
+      panel.border = element_rect(linewidth = .4, color = "grey20", fill = NA))
   )
 }
 
@@ -465,7 +465,7 @@ last_ggtour_env <- function(){.store$ggtour_ls}
 #' ggt <- ggtour(mt_path, dat, angle = .3) +
 #'   proto_default(aes_args = list(color = clas, shape = clas),
 #'                 identity_args = list(size = 1.5, alpha = .7))
-#' \donttest{
+#' \dontrun{
 #' ## Default .gif rendering
 #' animate_gganimate(ggt)
 #' 
@@ -705,7 +705,7 @@ filmstrip <- function(
     ggplot2::facet_wrap(c("frame", names(ggtour$facet$params$facets)), ...) +
     ggplot2::theme( ## Note; strip spacing and position in theme_spinifex()
       ## Border introduced only with facet.
-      panel.border = element_rect(size = .4, color = "grey20", fill = NA))
+      panel.border = element_rect(linewidth = .4, color = "grey20", fill = NA))
 }
 
 
@@ -754,7 +754,7 @@ filmstrip <- function(
 #' 
 #' ## 1D case:
 #' bas1d     <- basis_pca(dat, d = 1)
-#' mv        <- manip_var_of(bas, 3)
+#' mv        <- manip_var_of(bas1d, 3)
 #' mt_path1d <- manual_tour(bas1d, manip_var = mv)
 #' 
 #' ggt1d <- ggtour(mt_path1d, dat, angle = .3) +
@@ -815,7 +815,7 @@ proto_basis <- function(
   ## Return proto
   list(
     ggplot2::geom_path(data = .circle, color = "grey80",
-                       size = line_size, inherit.aes = FALSE,
+                       linewidth = line_size, inherit.aes = FALSE,
                        mapping = ggplot2::aes(x = x, y = y)),
     suppressWarnings(ggplot2::geom_segment( ## Suppress unused arg: frames
       data = .df_basis,
@@ -1177,8 +1177,8 @@ proto_density <- function(
   rug_shape = c(3, 142, 124, NULL)
 ){
   ## Initialize
-  if(class(transformr::tween_polygon) != "function")
-    stop("proto_density requires the {transformr} package, please try install.packages('transformr')")
+  # if("function" %in% is(transformr::tween_polygon))
+  #   stop("proto_density requires the {transformr} package, please try install.packages('transformr')")
   eval(.init4proto)
   if(is.null(.df_data))
     stop("proto_density: Data is NULL. Was data passed to the basis array or ggtour?")
@@ -1193,7 +1193,7 @@ proto_density <- function(
   ## geom_density do.call
   y_coef <- diff(range(.map_to$y))
   .aes_func <- function(...)
-    ggplot2::aes(x = x, y = y_coef * ..ndensity.., frame = frame, ...)
+    ggplot2::aes(x = x, y = y_coef * after_stat(ndensity), frame = frame, ...)
   .aes_call <- do.call(.aes_func, aes_args)
   .geom_func <- function(...)suppressWarnings(
     ggplot2::geom_density(mapping = .aes_call, data = .df_data, ...,
@@ -1380,7 +1380,7 @@ proto_text <- function(
 #'   proto_hex(bins = 20)
 #' 
 #' ## Hexagons don't show up in plotly animation.
-#' \donttest{
+#' \dontrun{
 #' animate_gganimate(ggp)
 #' }
 proto_hex <- function(

@@ -41,7 +41,7 @@ gghead <- ggplot(Orange, aes(age, circumference, color = Tree))
 gghead +
   gg_ls
 
-## ---- echo = FALSE------------------------------------------------------------
+## ----echo = FALSE-------------------------------------------------------------
 data.frame(
   object = c("head", "body", "render"),
   ggplot2 = c("ggplot()", "geom_*()", "NA"),
@@ -50,7 +50,7 @@ data.frame(
 ) %>%
   knitr::kable()
 
-## ---- eval=FALSE--------------------------------------------------------------
+## ----eval=FALSE---------------------------------------------------------------
 #  library(tourr)
 #  library(spinifex)
 #  
@@ -75,7 +75,7 @@ data.frame(
 #  ## Or as a plotly html widget
 #  #animate_plotly(ggt)
 
-## ---- echo=FALSE, out.width="100%"--------------------------------------------
+## ----echo=FALSE, out.width="100%"---------------------------------------------
 ## Cut down sub-directory size, making animations to gif and including those.
 if(FALSE){
   library(tourr)
@@ -95,7 +95,7 @@ if(FALSE){
 #knitr::include_graphics("./proto_mt_penguins.gif")
 #knitr::include_url("https://github.com/nspyrison/spinifex/blob/master/vignettes/proto_mt_penguins.gif?raw=true")
 
-## ---- eval=FALSE--------------------------------------------------------------
+## ----eval=FALSE---------------------------------------------------------------
 #  ## Save a grand tour basis path, projecting through randomly selected bases
 #  gt_path <- save_history(dat, grand_tour(), max_bases = 3)
 #  
@@ -110,7 +110,7 @@ if(FALSE){
 #  ## Or as a plotly html widget
 #  #animate_plotly(ggt)
 
-## ---- echo=FALSE, out.width="100%"--------------------------------------------
+## ----echo=FALSE, out.width="100%"---------------------------------------------
 ## Cut down sub-directory size, making animations to gif and including those.
 if(FALSE){
   gt_path <- save_history(dat, grand_tour(), max_bases = 3)
@@ -123,7 +123,7 @@ if(FALSE){
 #knitr::include_graphics("./proto_gt_penguins.gif")
 #knitr::include_url("https://github.com/nspyrison/spinifex/blob/master/vignettes/proto_guided1d_penguins.gif?raw=true")
 
-## ---- eval=FALSE--------------------------------------------------------------
+## ----eval=FALSE---------------------------------------------------------------
 #  ## (Quietly create) a 1d guided tour, optimizing the projection space for the holes() function
 #  guided_path <- save_history(dat, guided_tour(holes(), d = 1))
 #  
@@ -137,7 +137,7 @@ if(FALSE){
 #  ## Or as a plotly html widget
 #  #animate_plotly(ggt)
 
-## ---- echo=FALSE, out.width="100%"--------------------------------------------
+## ----echo=FALSE, out.width="100%"---------------------------------------------
 ## Cut down sub-directory size, making animations to gif and including those.
 if(FALSE){
   guided_path <- save_history(dat, guided_tour(holes(), d = 1))
@@ -151,7 +151,7 @@ if(FALSE){
 #knitr::include_graphics("./proto_guided1d_penguins.gif")
 #knitr::include_url("https://github.com/nspyrison/spinifex/blob/master/vignettes/proto_guided1d_penguins.gif?raw=true")
 
-## ---- eval=FALSE--------------------------------------------------------------
+## ----eval=FALSE---------------------------------------------------------------
 #  ggt <- ggt +
 #    theme_bw() +
 #    ggtitle("My Tour Animation") +
@@ -161,7 +161,7 @@ if(FALSE){
 #  ## Or as a plotly html widget
 #  #animate_plotly(ggt)
 
-## ---- echo=FALSE, out.width="100%"--------------------------------------------
+## ----echo=FALSE, out.width="100%"---------------------------------------------
 ## Cut down sub-directory size, making animations to gif and including those.
 if(FALSE){
   ggt <- ggt +
@@ -176,7 +176,7 @@ if(FALSE){
 #knitr::include_graphics("./proto_guided1d_interop_penguins.gif")
 #knitr::include_url("https://github.com/nspyrison/spinifex/blob/master/vignettes/proto_guided1d_interop_penguins.gif?raw=true")
 
-## ---- eval=FALSE--------------------------------------------------------------
+## ----eval=FALSE---------------------------------------------------------------
 #  gt_path <- save_history(dat, max = 7)
 #  ggt <- ggtour(gt_path, dat, angle = .3) +
 #    facet_wrap_tour(facet_var = clas, nrow = 1) +
@@ -188,7 +188,7 @@ if(FALSE){
 #  ## Or as a plotly html widget
 #  #animate_plotly(ggt)
 
-## ---- echo=FALSE, out.width="100%"--------------------------------------------
+## ----echo=FALSE, out.width="100%"---------------------------------------------
 ## Cut down sub-directory size, making animations to gif and including those.
 if(FALSE){
   gt_path <- save_history(dat, max = 7)
@@ -204,7 +204,7 @@ if(FALSE){
 #knitr::include_graphics("./proto_facet_penguins.gif")
 #knitr::include_url("https://github.com/nspyrison/spinifex/blob/master/vignettes/proto_facet_penguins.gif?raw=true")
 
-## ---- echo = FALSE------------------------------------------------------------
+## ----echo = FALSE-------------------------------------------------------------
 data.frame(
   `proto functions` =
     c("ggtour", "proto_point", "proto_text", "proto_hex", "proto_origin/1d", "proto_density", "proto_basis/1d", "proto_default/1d", "animate_plotly", "animate_gganimate"),

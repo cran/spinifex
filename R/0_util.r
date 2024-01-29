@@ -13,8 +13,8 @@
 #' @return Single logical, whether or not the matrix is orthonormal.
 #' @export
 #' @examples 
-#' is_orthonormal(tourr::basis_random(n = 6))
-#' is_orthonormal(matrix(1:12, ncol = 2), tol = 0.01)
+#' spinifex::is_orthonormal(tourr::basis_random(n = 6))
+#' spinifex::is_orthonormal(matrix(1:12, ncol = 2), tol = 0.01)
 is_orthonormal <- function(x, tol = 0.001) {
   if(is.numeric(x) == FALSE) stop("'x', expected to be numeric and coercable to matrix.")
   x <- as.matrix(x)
@@ -409,7 +409,8 @@ basis_pca <- function(data, d = 2){
 #' clas <- wine$Type
 #' basis_olda(data = dat, class = clas)
 basis_olda <- function(data, class, d = 2){
-  #lda <- MASS::lda(class ~ ., data = data.frame(data, class))$scaling
+  ####lda <- MASS::lda(class ~ ., data = data.frame(data, class))$scaling
+  #lda <- MASS::lda(data.frame(data), class)$scaling ## not only returns k-1 components, :()
   #ret <- tourr::orthonormalise(lda)[, 1L:d, drop = FALSE]
   ret <- Rdimtools::do.olda(X = as.matrix(data),
                             label = as.factor(class),
@@ -629,8 +630,10 @@ manip_var_of <- function(basis, rank = 1){
 #' dim(gt1d_path)
 #' 
 #' ## A holes guided tour path
-#' holes_path <- save_history(dat, guided_tour(holes(), max.tries = 100))
+#' holes_path <- save_history(dat, guided_tour(holes(), max.tries = 10))
 #' dim(holes_path)
+#' 
+#' ## These are basis_arrays to be used in ?spinifex::ggtour()
 save_history <- function(
   data,
   tour_path = tourr::grand_tour(),
@@ -713,7 +716,7 @@ theme_spinifex <- function(...){
       strip.text       = element_text(        ## Facet strip spacing
         margin = margin(b = 3L, t = 3L)),
       strip.background =                      ## Facet strip
-        element_rect(size = .4, color = "grey20", fill = "grey90"),
+        element_rect(linewidth = .4, color = "grey20", fill = "grey90"),
       ...)                                    ## Ellipsis trumps defaults
   )
 }
@@ -751,7 +754,7 @@ is_any_layer_class <- function(ggplot, class_nm = "GeomDensity"){
 #' Send a message if the 4th chunk of the package version is 9000.
 #' @param text A character string to message() if package version is _9000.
 devMessage <- function(text){
-  version4 <-  utils::packageVersion(pkg = "spinifex")[1L, 4L]
+  version4 <- utils::packageVersion(pkg = "spinifex")[1L, 4L] %>% as.numeric()
   if(is.na(version4) == FALSE)
     if(version4 == 9000L)
       message(paste0("devMessage: ", text))

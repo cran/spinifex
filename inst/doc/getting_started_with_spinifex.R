@@ -33,7 +33,7 @@ ggtour(basis_array = bas_pca, data = dat_std) +
 ## ----view-manip-space---------------------------------------------------------
 view_manip_space(basis = bas_pca, manip_var = 1) 
 
-## ---- eval=FALSE--------------------------------------------------------------
+## ----eval=FALSE---------------------------------------------------------------
 #  ## Save a tour path
 #  mt_path <- manual_tour(basis = bas_pca, manip_var = 3)
 #  
@@ -48,7 +48,7 @@ view_manip_space(basis = bas_pca, manip_var = 1)
 #  ## Or as a plotly html widget
 #  #animate_plotly(ggt, fps = 6)
 
-## ---- echo=FALSE, out.width="100%"--------------------------------------------
+## ----echo=FALSE, out.width="100%"---------------------------------------------
 ## Cut down sub-directory size, Following the approach in cheem making animations to gif and including those.
 if(FALSE){
   ## Save a tour path
@@ -67,7 +67,7 @@ if(FALSE){
 #knitr::include_graphics("./mt_penguins.gif")
 #knitr::include_url("https://github.com/nspyrison/spinifex/blob/master/vignettes/mt_penguins.gif?raw=true")
 
-## ---- echo=F------------------------------------------------------------------
+## ----echo=F-------------------------------------------------------------------
 nasa <- select(GGally::nasa, lat, long, day, surftemp)
 
 temp.gly <- GGally::glyphs(nasa, "long", "day", "lat", "surftemp", height = 2.5)
@@ -108,7 +108,7 @@ rot_xy <- bind_cols(rot_x, rot_y, .name_repair = "unique") %>%
 ggplot(rot_xy, aes(x = x, y = y)) + geom_point(size = 0.3) +
   theme_bw() + labs(x = "", y = "")
 
-## ---- eval=FALSE--------------------------------------------------------------
+## ----eval=FALSE---------------------------------------------------------------
 #  ## Transform data
 #  dat_std    <- scale_sd(penguins_na.rm[, 1:4])
 #  ## Save holes indexed guided tour
@@ -123,7 +123,7 @@ ggplot(rot_xy, aes(x = x, y = y)) + geom_point(size = 0.3) +
 #  ## Or as a plotly html widget
 #  #animate_plotly(ggt)
 
-## ---- echo=FALSE, out.width="100%"--------------------------------------------
+## ----echo=FALSE, out.width="100%"---------------------------------------------
 ## Cut down sub-directory size, Following the approach in cheem making animations to gif and including those.
 if(FALSE){
   ## Transform data
@@ -151,7 +151,7 @@ holes_bas <- basis_guided(dat_std, index_f = tourr::holes(), d = 2)
 ggtour(holes_bas, dat_std, angle = .2) +
   proto_default(aes_args = list(color = clas, shape = clas))
 
-## ---- eval=FALSE--------------------------------------------------------------
+## ----eval=FALSE---------------------------------------------------------------
 #  ## Alternatively, ask for the variable by rank of the magnitude contributed:
 #  (mv <- manip_var_of(holes_bas, rank = 1))
 #  ## A radial, manual tour from the resulting holes basis
@@ -166,7 +166,7 @@ ggtour(holes_bas, dat_std, angle = .2) +
 #  ## Or as a plotly html widget
 #  #animate_plotly(ggt)
 
-## ---- echo=FALSE, out.width="100%"--------------------------------------------
+## ----echo=FALSE, out.width="100%"---------------------------------------------
 ## Cut down sub-directory size, Following the approach in cheem making animations to gif and including those.
 if(FALSE){
   ## Alternatively, ask for the variable by rank of the magnitude contributed:
