@@ -20,6 +20,7 @@ library("tourr")
 library("spinifex")
 library("ggplot2")
 library("dplyr")
+library("GGally")
 
 ## ----view-basis---------------------------------------------------------------
 dat_std <- scale_sd(penguins_na.rm[, 1:4])
@@ -34,19 +35,19 @@ ggtour(basis_array = bas_pca, data = dat_std) +
 view_manip_space(basis = bas_pca, manip_var = 1) 
 
 ## ----eval=FALSE---------------------------------------------------------------
-#  ## Save a tour path
-#  mt_path <- manual_tour(basis = bas_pca, manip_var = 3)
-#  
-#  ## Compose the display
-#  my_ggtour <- ggtour(basis_array = mt_path, data = dat_std, angle = .2) +
-#    ## Angle is the distance between (geodesically) interpolated frames
-#    proto_default(aes_args = list(color = clas, shape = clas))
-#  
-#  ## Animate
-#  animate_gganimate(ggtour = my_ggtour, fps = 6,
-#                    height = 3, width = 4.5, units = "in", res = 150)
-#  ## Or as a plotly html widget
-#  #animate_plotly(ggt, fps = 6)
+# ## Save a tour path
+# mt_path <- manual_tour(basis = bas_pca, manip_var = 3)
+# 
+# ## Compose the display
+# my_ggtour <- ggtour(basis_array = mt_path, data = dat_std, angle = .2) +
+#   ## Angle is the distance between (geodesically) interpolated frames
+#   proto_default(aes_args = list(color = clas, shape = clas))
+# 
+# ## Animate
+# animate_gganimate(ggtour = my_ggtour, fps = 6,
+#                   height = 3, width = 4.5, units = "in", res = 150)
+# ## Or as a plotly html widget
+# #animate_plotly(ggt, fps = 6)
 
 ## ----echo=FALSE, out.width="100%"---------------------------------------------
 ## Cut down sub-directory size, Following the approach in cheem making animations to gif and including those.
@@ -109,19 +110,19 @@ ggplot(rot_xy, aes(x = x, y = y)) + geom_point(size = 0.3) +
   theme_bw() + labs(x = "", y = "")
 
 ## ----eval=FALSE---------------------------------------------------------------
-#  ## Transform data
-#  dat_std    <- scale_sd(penguins_na.rm[, 1:4])
-#  ## Save holes indexed guided tour
-#  holes_path <- save_history(dat_std, tourr::guided_tour(tourr::holes()))
-#  
-#  ## Compose display
-#  ggt <- ggtour(holes_path, dat_std, angle = .2) +
-#    proto_default(aes_args = list(color = clas, shape = clas))
-#  
-#  ## Animate
-#  animate_gganimate(ggt, height = 3, width = 4.5, units = "in", res = 150)
-#  ## Or as a plotly html widget
-#  #animate_plotly(ggt)
+# ## Transform data
+# dat_std    <- scale_sd(penguins_na.rm[, 1:4])
+# ## Save holes indexed guided tour
+# holes_path <- save_history(dat_std, tourr::guided_tour(tourr::holes()))
+# 
+# ## Compose display
+# ggt <- ggtour(holes_path, dat_std, angle = .2) +
+#   proto_default(aes_args = list(color = clas, shape = clas))
+# 
+# ## Animate
+# animate_gganimate(ggt, height = 3, width = 4.5, units = "in", res = 150)
+# ## Or as a plotly html widget
+# #animate_plotly(ggt)
 
 ## ----echo=FALSE, out.width="100%"---------------------------------------------
 ## Cut down sub-directory size, Following the approach in cheem making animations to gif and including those.
@@ -152,19 +153,19 @@ ggtour(holes_bas, dat_std, angle = .2) +
   proto_default(aes_args = list(color = clas, shape = clas))
 
 ## ----eval=FALSE---------------------------------------------------------------
-#  ## Alternatively, ask for the variable by rank of the magnitude contributed:
-#  (mv <- manip_var_of(holes_bas, rank = 1))
-#  ## A radial, manual tour from the resulting holes basis
-#  mt_path <- manual_tour(holes_bas, mv)
-#  ## Compose tour
-#  ggt <- ggtour(mt_path, dat_std) +
-#    proto_point(aes_args = list(color = clas, shape = clas)) +
-#    proto_basis() +
-#    proto_origin()
-#  ## Animate
-#  animate_gganimate(ggt, height = 3, width = 4.5, units = "in", res = 150)
-#  ## Or as a plotly html widget
-#  #animate_plotly(ggt)
+# ## Alternatively, ask for the variable by rank of the magnitude contributed:
+# (mv <- manip_var_of(holes_bas, rank = 1))
+# ## A radial, manual tour from the resulting holes basis
+# mt_path <- manual_tour(holes_bas, mv)
+# ## Compose tour
+# ggt <- ggtour(mt_path, dat_std) +
+#   proto_point(aes_args = list(color = clas, shape = clas)) +
+#   proto_basis() +
+#   proto_origin()
+# ## Animate
+# animate_gganimate(ggt, height = 3, width = 4.5, units = "in", res = 150)
+# ## Or as a plotly html widget
+# #animate_plotly(ggt)
 
 ## ----echo=FALSE, out.width="100%"---------------------------------------------
 ## Cut down sub-directory size, Following the approach in cheem making animations to gif and including those.

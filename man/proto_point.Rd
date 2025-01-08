@@ -73,6 +73,7 @@ Other ggtour proto functions:
 \code{\link{proto_highlight}()},
 \code{\link{proto_hline0}()},
 \code{\link{proto_origin}()},
-\code{\link{proto_text}()}
+\code{\link{proto_text}()},
+\code{\link{proto_text_repel}()}
 }
 \concept{ggtour proto functions}

@@ -1,3 +1,16 @@
+# spinifex v0.3.8
+
+- New function `proto_text_repel` implementing `ggrepl::geom_text_repel`, only works with `animate_gganimate`
+- Function `proto_text` now has more flexible labels and examples using them
+- Fixed example dataset in `run_app`, weather and breast cancer
+- Fixed new ggplot2 warnings in `proto_basis1d`; aggregated 2 rows to 1
+- New function `plot_pca` quick pca plots
+- New function `plot_pca_scree` quick pca plot with scree plot
+- Fixed issue of erroneous warning about replication length due to row_index = TRUE rather than NULL
+- Function `save_history` message is silenced when verbose = FALSE
+- Safer `devMessage` for development purposes
+- Minor documentation cleanup
+
 
 # spinifex v0.3.7
 
@@ -6,7 +19,7 @@
 - Replace `..ndensity..` with `after_stat(ndensity)` in density geoms
 - Removed length checks from tests as ggplot2 plans a change
 - Fixed a change in behavior in testthat
-- Moved `gganimate` documentation from `\\donttest` to `\\dontrun` in alignment with `gganimate` documentation. (Else somee OS builds fail, with no mechanism to troubleshoot)
+- Moved `gganimate` documentation from `\\donttest` to `\\dontrun` in alignment with `gganimate` documentation. (Else some OS builds fail, with no mechanism to troubleshoot)
 
 # spinifex v0.3.6
 
