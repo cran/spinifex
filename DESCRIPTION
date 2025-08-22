@@ -1,7 +1,7 @@
 Package: spinifex
 Title: Manual Tours, Manual Control of Dynamic Projections of Numeric
         Multivariate Data
-Version: 0.3.8
+Version: 0.3.9
 Authors@R: c(
   person("Nicholas", "Spyrison", role = c("aut", "cre"),
     email = "spyrison@gmail.com",
@@ -25,7 +25,7 @@ License: MIT + file LICENSE
 URL: https://github.com/nspyrison/spinifex/
 BugReports: https://github.com/nspyrison/spinifex/issues
 Imports: ggplot2, gganimate, plotly, shiny, Rdimtools, magrittr
-Suggests: MASS, ggrepel, patchwork, hexbin, htmlwidgets, gifski, png,
+Suggests: MASS, ggrepel, patchwork, gifski, hexbin, htmlwidgets, png,
         dplyr, knitr, GGally, testthat, lifecycle, covr, spelling
 VignetteBuilder: knitr
 Encoding: UTF-8
@@ -34,9 +34,10 @@ RoxygenNote: 7.3.2
 Language: en-US
 Config/testthat/edition: 3
 NeedsCompilation: no
-Packaged: 2025-01-08 21:38:51 UTC; nxs9837
-Author: Nicholas Spyrison [aut, cre] (<https://orcid.org/0000-0002-8417-0212>),
-  Dianne Cook [aut, ths] (<https://orcid.org/0000-0002-3813-7155>)
+Packaged: 2025-08-22 18:28:07 UTC; spyri
+Author: Nicholas Spyrison [aut, cre] (ORCID:
+    <https://orcid.org/0000-0002-8417-0212>),
+  Dianne Cook [aut, ths] (ORCID: <https://orcid.org/0000-0002-3813-7155>)
 Maintainer: Nicholas Spyrison <spyrison@gmail.com>
 Repository: CRAN
-Date/Publication: 2025-01-08 22:10:02 UTC
+Date/Publication: 2025-08-22 19:00:02 UTC

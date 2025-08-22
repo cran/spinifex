@@ -496,6 +496,10 @@ animate_gganimate <- function(
   end_pause = 1,
   ... ## Passed to gganimate::animate
 ){
+  if(requireNamespace("gifski", quietly = TRUE) == FALSE)
+    stop("animate_gganimate: package 'gifski' was not found, please install to render to gif with animate_gganimate")
+  
+  
   ## Early out, print ggplot if only 1 frame.
   if(length(ggtour$layers) == 0L) stop("No layers found, did you forget to add a proto_*?")
   n_frames <- last_ggtour_env()$n_frames
@@ -648,7 +652,7 @@ animate_plotly <- function(
 # #'   proto_point(aes_args = list(color = clas, shape = clas),
 # #'               identity_args = list(size = 1.5, alpha = .7))
 # #' 
-# #' \donttest{
+# #' \dontrun{
 # #' animate_gganimate_knit2pdf(ggtour)
 # #' }
 # animate_gganimate_knit2pdf <- function(ggtour,
@@ -1391,7 +1395,7 @@ proto_text <- function(
 #'   proto_text_repel(list(color = clas)) +
 #'   proto_point(list(color = clas, shape = clas),
 #'               list(size = 1))
-#' \donttest{
+#' \dontrun{
 #' animate_gganimate(ggt)
 #' }
 #' 
@@ -1409,7 +1413,7 @@ proto_text <- function(
 #'   proto_point(list(color = clas, shape = clas),
 #'               list(size = 1),
 #'               row_index = 1:30)
-#' \donttest{
+#' \dontrun{
 #' animate_gganimate(ggt2)
 #' }
 proto_text_repel <- function(
@@ -2022,8 +2026,8 @@ plot_pca <- function(data, components = c(1, 2), ...){
   
   ggtour(bas, data) +
     proto_default(...) +
-    labs(x = paste0("PC", components[1], ", ", pct_var_exp[1], "% var"),
-         y = paste0("PC", components[2], ", ", pct_var_exp[2], "% var"),)
+    ggplot2::labs(x = paste0("PC", components[1], ", ", pct_var_exp[1], "% var"),
+                  y = paste0("PC", components[2], ", ", pct_var_exp[2], "% var"),)
 }
 
 #' Plot 2 components of Principal Component Analysis
@@ -2057,13 +2061,13 @@ plot_pca_scree <- function(data, components = c(1, 2), ...){
   
   g1 <- ggtour(bas, data) +
     proto_default(...) +
-    labs(x = paste0("PC", components[1], ", ", var_df$pct_exp[1], "% var"),
-         y = paste0("PC", components[2], ", ", var_df$pct_exp[2], "% var"),)
+    ggplot2::labs(x = paste0("PC", components[1], ", ", var_df$pct_exp[1], "% var"),
+                  y = paste0("PC", components[2], ", ", var_df$pct_exp[2], "% var"),)
   g2 <- ggplot(var_df) +
     geom_col(aes(comp, pct_exp, fill = class), color = "black") +
     geom_line(aes(comp, cumvar)) +
     geom_point(aes(comp, cumvar)) +
-    labs(y = "Percent var explained", x = "Principal component") +
+    ggplot2::labs(y = "Percent var explained", x = "Principal component") +
     theme_minimal() +
     theme(legend.position = "none")
   g1 + g2
